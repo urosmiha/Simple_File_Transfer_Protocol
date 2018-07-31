@@ -9,22 +9,31 @@ public class Client {
             String IP = "localhost";
             int port = 8085;
 
-            Socket s = new Socket(IP, port);
+            for(;;) {
 
-            BufferedReader inUser = new BufferedReader(new InputStreamReader(System.in));
+                Socket s = new Socket(IP, port);
 
-            DataOutputStream out = new DataOutputStream(s.getOutputStream());
+                BufferedReader inUser = new BufferedReader(new InputStreamReader(System.in));
 
-            BufferedReader inServer = new BufferedReader(new InputStreamReader(s.getInputStream()));
+                DataOutputStream out = new DataOutputStream(s.getOutputStream());
 
-            System.out.println("Enter command: ");
-            Lmessage = inUser.readLine();
-            out.writeBytes(Lmessage + '\n');
+                BufferedReader inServer = new BufferedReader(new InputStreamReader(s.getInputStream()));
 
-            Umessage = inServer.readLine();
-            System.out.println("From server: " + Umessage);
+                System.out.println("Enter command: ");  // Get user input
+                Lmessage = inUser.readLine();
+                out.writeBytes(Lmessage + '\n');
 
-            s.close();
+                Umessage = inServer.readLine();
+                System.out.println("From server: " + Umessage);
+//
+                s.close();
+
+                if(Lmessage.equals("DONE")) {
+                    System.out.println("Bye...");
+                    break;
+                }
+            }
+
 
         }
 }

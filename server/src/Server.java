@@ -4,10 +4,11 @@ import java.io.*;
 public class Server {
     public static void main(String[] args) throws Exception {
 
-        String Lmessage;
-        String Umessage;
+        String cmd_in;
+        String response;
         int port = 8085;
 
+        CmdHandler cmd_handler = new CmdHandler();
         ServerSocket ss = new ServerSocket(port);
 
         while(true) {
@@ -18,11 +19,19 @@ public class Server {
             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
             DataOutputStream out = new DataOutputStream(s.getOutputStream());
 
-            Lmessage = in.readLine();
-            System.out.println(("Recieved: " + Lmessage));
+            cmd_in = in.readLine();
+            System.out.println(("Received: " + cmd_in));
 
-            Umessage = Lmessage.toUpperCase() + "\n";
-            out.writeBytes(Umessage);
+            response = cmd_handler.handleCommand(cmd_in);
+            response = response + '\n';
+            System.out.println(("Response: " + response));
+            out.writeBytes(response);
+
+            if(cmd_in.equals("DONE")) {
+                s.close();
+                System.out.print("Bye...");
+                break;
+            }
         }
     }
 }
