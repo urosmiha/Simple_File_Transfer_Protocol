@@ -1,3 +1,4 @@
+import java.awt.*;
 import java.net.*;
 import java.io.*;
 
@@ -8,27 +9,41 @@ public class Server {
         String response;
         int port = 8085;
 
+        HelperFunctions helper = new HelperFunctions();
         CmdHandler cmd_handler = new CmdHandler();
         ServerSocket ss = new ServerSocket(port);
-
-//        cmd_handler.authoriseUser("user");
+        System.out.println("Server started");
 
         while(true) {
             Socket s = ss.accept();
-            System.out.println("+" + port + " SFTP Service");
 
             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
             DataOutputStream out = new DataOutputStream(s.getOutputStream());
-
-//            out.writeBytes("+" + port + " SFTP Service");
 
             cmd_in = in.readLine();
             System.out.println(("Received: " + cmd_in));
 
             response = cmd_handler.handleCommand(cmd_in);
-            response = response + '\n';
-            System.out.println(("Response: " + response));
-            out.writeBytes(response);
+            System.out.println(response);
+
+            if(response.contains("\n")){
+                int count = helper.countChar(response, '\n');
+                System.out.println(count);
+                String tmp_msg = response;
+                String tmp_response = response;
+                System.out.print(response);
+                for(int i=0; i < count; i++) {
+                    tmp_msg = tmp_response.substring(0, tmp_response.indexOf("\n"));
+                    tmp_response = tmp_response.substring(tmp_response.indexOf("\n") + 1);
+                    System.out.println(tmp_msg);
+                    out.writeBytes(tmp_msg);
+                }
+                out.writeBytes(tmp_response + '\0' + '\n');
+            }
+            else {
+                response = response + '\0' + '\n';
+                out.writeBytes(response);
+            }
 
             if(cmd_in.equals("DONE")) {
                 s.close();

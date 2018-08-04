@@ -66,4 +66,21 @@ public class HelperFunctions {
         // If you do not find the matching user or cannot access account then return error code
         return "-";
     }
+
+    public int countChar(String s, char ch) {
+
+        int counter = 0;
+        for( int i=0; i<s.length(); i++ ) {
+            if( s.charAt(i) == ch ) {
+                counter++;
+            }
+        }
+        return counter;
+    }
+
+    public String msToDays(long ms) {
+
+        int days = ((int) (ms / (1000*60*60*24)));
+        return "" + days;
+    }
 }

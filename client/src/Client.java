@@ -34,7 +34,14 @@ public class Client {
 
                 Umessage = inServer.readLine();
                 System.out.println("From server: " + Umessage);
-//
+
+                while(Umessage.charAt(Umessage.length()-1) != '\0') {
+                    Umessage = inServer.readLine();
+                    System.out.println(Umessage);
+                }
+
+
+
                 s.close();
 
                 if(Lmessage.equals("DONE")) {
