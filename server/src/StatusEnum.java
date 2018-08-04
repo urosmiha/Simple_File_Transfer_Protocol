@@ -1,7 +1,7 @@
 public enum StatusEnum {
-    SIGNEDOUT,
+    LOGGEDOUT,
     USERTRUE,
     PASSTRUE,
     ACCTTRUE,
-    SIGNEDIN
+    LOGGEDIN
 }

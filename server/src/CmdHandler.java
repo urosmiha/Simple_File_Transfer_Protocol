@@ -1,12 +1,16 @@
+import java.awt.*;
 import java.io.*;
 
 public class CmdHandler {
 
+    HelperFunctions helper;
     StatusEnum status;
     String current_user;
 
     public CmdHandler() {
-        status = StatusEnum.SIGNEDOUT;
+        status = StatusEnum.LOGGEDOUT;
+        current_user = " ";
+        helper = new HelperFunctions();
     }
 
     public String handleCommand(String cmd) {
@@ -29,7 +33,7 @@ public class CmdHandler {
             case "USER":
                 return authoriseUser(arg);
             case "ACCT":
-                return "acct";
+                return authoriseAccount(arg);
             case "PASS":
                 return "hdh";
             case "DONE":
@@ -39,16 +43,16 @@ public class CmdHandler {
         }
     }
 
-//    CHANGE BACK TO PRIVATE ONCE FINISH TESTING
-    public String authoriseUser(String user) {
+//    Authorise the enetered user-id
+    private String authoriseUser(String user) {
 
-        if(status.equals(StatusEnum.SIGNEDOUT)) {
+        if(status.equals(StatusEnum.LOGGEDOUT)) {
 
             // If user logs in as a root then there is no password associated with it.
             // So set status as SIGNED-IN immediately.
             String root = "root";
             if(user.equals(root)) {
-                status = StatusEnum.SIGNEDIN;
+                status = StatusEnum.LOGGEDIN;
                 current_user = user;
                 return "!"+ root + " logged in";
             }
@@ -59,14 +63,15 @@ public class CmdHandler {
             try {
                 br = new BufferedReader(new FileReader(file));
             } catch (FileNotFoundException e) {
-                return "-Failed to access user-ids";
+                return "-";
             }
 
             // loop through the list of users and see if any matches the one sent from the client.
             // If there is a match then send success response
-            String tmp_user;
+            String rd_ln = "";
             try {
-                while ((tmp_user = br.readLine()) != null) {
+                while ((rd_ln = br.readLine()) != null) {
+                    String tmp_user = rd_ln.substring(0, rd_ln.indexOf("|"));
                     if(user.endsWith(tmp_user)) {
                         status = StatusEnum.USERTRUE;
                         current_user = user;
@@ -74,7 +79,7 @@ public class CmdHandler {
                     }
                 }
             } catch (IOException e) {
-                return "-Failed verify the user";
+                return "-";
             }
 
             // Otherwise, this means that the user-id is not valid.
@@ -82,7 +87,34 @@ public class CmdHandler {
         }
         else {
             // If someone is already signed in then USER command should not be valid.
-            return "-" + current_user + " already signed in, please logout first";
+            return "-" + current_user + " is currently signed in, please logout first";
         }
     }
+
+    private String authoriseAccount(String account) {
+
+        // If we verified the user-id then we can check for the account
+        if(status.equals(StatusEnum.USERTRUE)) {
+
+            if (account.equals(helper.getUserAccount(current_user))) {
+                status = StatusEnum.ACCTTRUE;
+                return  "+Account valid, send password";
+            }
+            else if(helper.getUserAccount(current_user).equals(" ")) {         // No need for the password
+                status = StatusEnum.LOGGEDIN;
+                return  "! Account valid, logged-in";
+            }
+        }
+        else if (current_user.equals(" ")) {
+            return "-Please specify user first";
+        }
+        else {
+            return "-" + current_user + " is currently signed in, please logout first";
+        }
+
+        return "-Invalid account, try again";
+    }
+
+
+
 }
