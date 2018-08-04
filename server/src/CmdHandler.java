@@ -3,14 +3,18 @@ import java.io.*;
 
 public class CmdHandler {
 
-    HelperFunctions helper;
-    StatusEnum status;
-    String current_user;
+    private HelperFunctions helper;
+    private StatusEnum status;
+    private String current_user;
+    private String current_account;
+    private String current_password;
 
     public CmdHandler() {
         status = StatusEnum.LOGGEDOUT;
-        current_user = " ";
+        current_user = "";
         helper = new HelperFunctions();
+        current_account = "";
+        current_password = "";
     }
 
     public String handleCommand(String cmd) {
@@ -35,7 +39,7 @@ public class CmdHandler {
             case "ACCT":
                 return authoriseAccount(arg);
             case "PASS":
-                return "hdh";
+                return authorisePassword(arg);
             case "DONE":
                 return "+";
             default:
@@ -47,15 +51,6 @@ public class CmdHandler {
     private String authoriseUser(String user) {
 
         if(status.equals(StatusEnum.LOGGEDOUT)) {
-
-            // If user logs in as a root then there is no password associated with it.
-            // So set status as SIGNED-IN immediately.
-            String root = "root";
-            if(user.equals(root)) {
-                status = StatusEnum.LOGGEDIN;
-                current_user = user;
-                return "!"+ root + " logged in";
-            }
 
             // Read a text file with all the user-ids in it
             File file = new File("admin/users.txt");
@@ -73,9 +68,17 @@ public class CmdHandler {
                 while ((rd_ln = br.readLine()) != null) {
                     String tmp_user = rd_ln.substring(0, rd_ln.indexOf("|"));
                     if(user.endsWith(tmp_user)) {
-                        status = StatusEnum.USERTRUE;
                         current_user = user;
-                        return "+User-id valid, send account and password";
+                        // If user-id does NOT have an associated account and password then immediately login user
+                        if(helper.getUserAccount(user).equals(" ") && helper.getUserPassword(user).equals(" ")) {
+                            return "!"+ user + " logged in";
+                        } // If user-id does NOT have an associated account but it needs a password
+                        else if(helper.getUserAccount(user).equals(" ")){
+                            return "+User-id valid, send password";
+                        }   // any other way go to next step in login process
+                        else {
+                            return "+User-id valid, send account and password";
+                        }
                     }
                 }
             } catch (IOException e) {
@@ -87,34 +90,63 @@ public class CmdHandler {
         }
         else {
             // If someone is already signed in then USER command should not be valid.
-            return "-" + current_user + " is currently signed in, please logout first";
+            return "-" + current_user + " is currently signed in";
         }
     }
 
     private String authoriseAccount(String account) {
 
-        // If we verified the user-id then we can check for the account
-        if(status.equals(StatusEnum.USERTRUE)) {
-
+        // If user-id was set to some value
+        if(!current_user.isEmpty()) {
+            if(!current_account.isEmpty()) {
+                return "-Account is already set";
+            }
+            // Check if entered account matches the currently logged in user account
             if (account.equals(helper.getUserAccount(current_user))) {
-                status = StatusEnum.ACCTTRUE;
-                return  "+Account valid, send password";
+                current_account = account;
+                // If user-id does not require a password then just login or password was already set
+                if(helper.getUserPassword(current_user).equals(" ") || !current_password.isEmpty()) {
+                    status = StatusEnum.LOGGEDIN;
+                    return  "! Account valid, logged-in";
+                } // If account does not have a password then just login user immediately
+                else {
+                    return  "+Account valid, send password";
+                }
             }
-            else if(helper.getUserAccount(current_user).equals(" ")) {         // No need for the password
-                status = StatusEnum.LOGGEDIN;
-                return  "! Account valid, logged-in";
+            else {
+                return "-Invalid account, try again";
             }
-        }
-        else if (current_user.equals(" ")) {
-            return "-Please specify user first";
         }
         else {
-            return "-" + current_user + " is currently signed in, please logout first";
+            return "-Please specify user first";
         }
-
-        return "-Invalid account, try again";
     }
 
+    private String authorisePassword(String password) {
+
+        if(!current_user.isEmpty()) {
+            if(!current_password.isEmpty()) {
+                return "-Password is already set";
+            }
+            if(password.equals(helper.getUserPassword(current_user))) {
+                current_password = password;
+                // if current account is not required or it was already set then login
+                if(helper.getUserAccount(current_user).equals(" ") || !current_account.isEmpty()) {
+                    status = StatusEnum.LOGGEDIN;
+                    return "! Logged in";
+                }   // if the account was not set then ask for it
+                else {
+                    return "+Send Account";
+                }
+            }
+            else {
+                return "-Wrong password, try again";
+            }
+        }
+        else {
+            return "-Please specify user first";
+        }
+    }
 
 
 }
