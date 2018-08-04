@@ -11,13 +11,16 @@ public class Server {
         CmdHandler cmd_handler = new CmdHandler();
         ServerSocket ss = new ServerSocket(port);
 
+//        cmd_handler.authoriseUser("user");
+
         while(true) {
             Socket s = ss.accept();
-            System.out.println("Connected to server");
-            System.out.println("Listening on port " + port);
+            System.out.println("+" + port + " SFTP Service");
 
             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
             DataOutputStream out = new DataOutputStream(s.getOutputStream());
+
+//            out.writeBytes("+" + port + " SFTP Service");
 
             cmd_in = in.readLine();
             System.out.println(("Received: " + cmd_in));

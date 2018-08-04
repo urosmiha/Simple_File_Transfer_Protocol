@@ -1,7 +1,12 @@
+import java.io.*;
+
 public class CmdHandler {
 
-    public CmdHandler() {
+    StatusEnum status;
+    String current_user;
 
+    public CmdHandler() {
+        status = StatusEnum.SIGNEDOUT;
     }
 
     public String handleCommand(String cmd) {
@@ -34,7 +39,50 @@ public class CmdHandler {
         }
     }
 
-    private String authoriseUser(String user) {
-        return user;
+//    CHANGE BACK TO PRIVATE ONCE FINISH TESTING
+    public String authoriseUser(String user) {
+
+        if(status.equals(StatusEnum.SIGNEDOUT)) {
+
+            // If user logs in as a root then there is no password associated with it.
+            // So set status as SIGNED-IN immediately.
+            String root = "root";
+            if(user.equals(root)) {
+                status = StatusEnum.SIGNEDIN;
+                current_user = user;
+                return "!"+ root + " logged in";
+            }
+
+            // Read a text file with all the user-ids in it
+            File file = new File("admin/users.txt");
+            BufferedReader br = null;
+            try {
+                br = new BufferedReader(new FileReader(file));
+            } catch (FileNotFoundException e) {
+                return "-Failed to access user-ids";
+            }
+
+            // loop through the list of users and see if any matches the one sent from the client.
+            // If there is a match then send success response
+            String tmp_user;
+            try {
+                while ((tmp_user = br.readLine()) != null) {
+                    if(user.endsWith(tmp_user)) {
+                        status = StatusEnum.USERTRUE;
+                        current_user = user;
+                        return "+User-id valid, send account and password";
+                    }
+                }
+            } catch (IOException e) {
+                return "-Failed verify the user";
+            }
+
+            // Otherwise, this means that the user-id is not valid.
+            return "-Invalid user-id, try again";
+        }
+        else {
+            // If someone is already signed in then USER command should not be valid.
+            return "-" + current_user + " already signed in, please logout first";
+        }
     }
 }

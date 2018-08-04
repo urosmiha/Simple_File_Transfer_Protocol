@@ -9,6 +9,8 @@ public class Client {
             String IP = "localhost";
             int port = 8085;
 
+            boolean init = true;
+
             for(;;) {
 
                 Socket s = new Socket(IP, port);
@@ -18,6 +20,13 @@ public class Client {
                 DataOutputStream out = new DataOutputStream(s.getOutputStream());
 
                 BufferedReader inServer = new BufferedReader(new InputStreamReader(s.getInputStream()));
+
+//                if(init) {
+//                    out.writeBytes("\n");
+//                    init = false;
+//                    Umessage = inServer.readLine();
+//                    System.out.println("From server: " + Umessage);
+//                }
 
                 System.out.println("Enter command: ");  // Get user input
                 Lmessage = inUser.readLine();
