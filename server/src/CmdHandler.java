@@ -1,3 +1,4 @@
+import javax.sql.rowset.spi.SyncResolver;
 import java.awt.*;
 import java.io.*;
 import java.net.Socket;
@@ -10,7 +11,11 @@ public class CmdHandler {
     private String s_account;
     private String s_password;
 
+    private String s_dir;
+    private String tmp_dir = "";
     private String s_type;
+
+    private CdirSatatus cdir_pass_acct = CdirSatatus.WAITNON;
 
 //    DataOutputStream out;
 
@@ -22,6 +27,7 @@ public class CmdHandler {
 //            e.printStackTrace();
 //        }
 
+        s_dir = "user.dir/myDir/";
         status = StatusEnum.LOGGEDOUT;
         s_user = "";
         helper = new HelperFunctions();
@@ -31,7 +37,7 @@ public class CmdHandler {
         s_type = "";
     }
 
-    public String handleCommand(String cmd) {
+    protected String handleCommand(String cmd) {
 
         // First check if the command is at least 5 characters long and if there is a space after the 4 letter command
         // e.g. 'USER ' is valid, but 'USER' or 'USERx' will return error.
@@ -60,6 +66,8 @@ public class CmdHandler {
                 return changeType(arg);
             case "LIST":
                 return listFiles(arg);
+            case "CDIR":
+                return changeWorkingDir(arg);
             default:
                 return "fe";
         }
@@ -117,23 +125,45 @@ public class CmdHandler {
 
         // If user-id was set to some value
         if(!s_user.isEmpty()) {
-            if(!s_account.isEmpty()) {
-                return "-Account is already set";
-            }
-            // Check if entered account matches the currently logged in user account
-            if (account.equals(helper.getUserAccount(s_user))) {
-                s_account = account;
-                // If user-id does not require a password then just login or password was already set
-                if(helper.getUserPassword(s_user).equals(" ") || !s_password.isEmpty()) {
-                    status = StatusEnum.LOGGEDIN;
-                    return  "! Account valid, logged-in";
-                } // If account does not have a password then just login user immediately
+
+            if(cdir_pass_acct.equals(CdirSatatus.WAITBOTH)) {
+                if(account.equals(helper.getUserAccount(s_user))) {
+                    cdir_pass_acct = CdirSatatus.WAITPASS;
+                    return "+account ok, send password";
+                }
                 else {
-                    return  "+Account valid, send password";
+                    return "-invalid account";
+                }
+            }
+            else if(cdir_pass_acct.equals(CdirSatatus.WAITACCT)) {
+                if(account.equals(helper.getUserAccount(s_user))) {
+                    cdir_pass_acct = CdirSatatus.WAITNON;
+                    s_dir = tmp_dir;
+                    return "!Changed working dir to " + tmp_dir;
+                }
+                else {
+                    return "-invalid account";
                 }
             }
             else {
-                return "-Invalid account, try again";
+                if(!s_account.isEmpty()) {
+                    return "-Account is already set";
+                }
+                // Check if entered account matches the currently logged in user account
+                if (account.equals(helper.getUserAccount(s_user))) {
+                    s_account = account;
+                    // If user-id does not require a password then just login or password was already set
+                    if(helper.getUserPassword(s_user).equals(" ") || !s_password.isEmpty()) {
+                        status = StatusEnum.LOGGEDIN;
+                        return  "! Account valid, logged-in";
+                    } // If account does not have a password then just login user immediately
+                    else {
+                        return  "+Account valid, send password";
+                    }
+                }
+                else {
+                    return "-Invalid account, try again";
+                }
             }
         }
         else {
@@ -144,22 +174,42 @@ public class CmdHandler {
     private String authorisePassword(String password) {
 
         if(!s_user.isEmpty()) {
-            if(!s_password.isEmpty()) {
-                return "-Password is already set";
-            }
-            if(password.equals(helper.getUserPassword(s_user))) {
-                s_password = password;
-                // if current account is not required or it was already set then login
-                if(helper.getUserAccount(s_user).equals(" ") || !s_account.isEmpty()) {
-                    status = StatusEnum.LOGGEDIN;
-                    return "! Logged in";
-                }   // if the account was not set then ask for it
+            if(cdir_pass_acct.equals(CdirSatatus.WAITBOTH)) {
+                if(password.equals(helper.getUserPassword(s_user))) {
+                    cdir_pass_acct = CdirSatatus.WAITACCT;
+                    return "+account ok, send account";
+                }
                 else {
-                    return "+Send Account";
+                    return "-invalid password";
+                }
+            }
+            else if(cdir_pass_acct.equals(CdirSatatus.WAITPASS)) {
+                if(password.equals(helper.getUserPassword(s_user))) {
+                    cdir_pass_acct = CdirSatatus.WAITNON;
+                    s_dir = tmp_dir;
+                    return "!Changed working dir to " + tmp_dir;
+                }
+                else {
+                    return "-invalid password";
                 }
             }
             else {
-                return "-Wrong password, try again";
+                if (!s_password.isEmpty()) {
+                    return "-Password is already set";
+                }
+                if (password.equals(helper.getUserPassword(s_user))) {
+                    s_password = password;
+                    // if current account is not required or it was already set then login
+                    if (helper.getUserAccount(s_user).equals(" ") || !s_account.isEmpty()) {
+                        status = StatusEnum.LOGGEDIN;
+                        return "! Logged in";
+                    }   // if the account was not set then ask for it
+                    else {
+                        return "+Send Account";
+                    }
+                } else {
+                    return "-Wrong password, try again";
+                }
             }
         }
         else {
@@ -197,38 +247,39 @@ public class CmdHandler {
         System.out.println(status);
         if(status.equals(StatusEnum.LOGGEDIN)) {
             try {
-                File folder = new File(System.getProperty("user.dir"));
+                File folder = new File(System.getProperty(s_dir));
                 File[] listOfFiles = folder.listFiles();
-                String response = "+" + System.getProperty("user.dir") + "\r\n";
+                String response = "+" + System.getProperty(s_dir) + "\r\n";
 
                 assert listOfFiles != null;
-                for (int i = 0; i < listOfFiles.length; i++) {
+                for (File listOfFile : listOfFiles) {
                     // Append files
-                    if (listOfFiles[i].isFile()) {
-                        if(format.equals("R")) {
-                            response += listOfFiles[i].getName() + "\r\n";
-                        }
-                        else if (format.equals("V")) {
-                            response += listOfFiles[i].getName() + ": ";
-                            response += "Size: " + listOfFiles[i].length() + "; ";
-                            response += "Protection: ";
-                            if(listOfFiles[i].canExecute()) {
-                                response += "can Execute,";
-                            }
-                            if(listOfFiles[i].canRead()) {
-                                response += "can Read,";
-                            }
-                            if(listOfFiles[i].canWrite()) {
-                                response += "can Write";
-                            }
-                            response += "; ";
-                            String time = helper.msToDays(listOfFiles[i].lastModified());
-                            response += "Last modified " + time + " days ago; ";
-                            response += "Last Author: ;";
-                            response += "\r\n";
-                        }
-                        else {
-                            return "-Invalid format specified, please try again";
+                    if (listOfFile.isFile()) {
+                        switch (format) {
+                            case "R":
+                                response += listOfFile.getName() + "\r\n";
+                                break;
+                            case "V":
+                                response += listOfFile.getName() + ": ";
+                                response += "Size: " + listOfFile.length() + "; ";
+                                response += "Protection: ";
+                                if (listOfFile.canExecute()) {
+                                    response += "can Execute,";
+                                }
+                                if (listOfFile.canRead()) {
+                                    response += "can Read,";
+                                }
+                                if (listOfFile.canWrite()) {
+                                    response += "can Write";
+                                }
+                                response += "; ";
+                                String time = helper.msToDays(listOfFile.lastModified());
+                                response += "Last modified " + time + " days ago; ";
+                                response += "Last Author: ;";
+                                response += "\r\n";
+                                break;
+                            default:
+                                return "-Invalid format specified, please try again";
                         }
                     }
                 }
@@ -236,6 +287,53 @@ public class CmdHandler {
 
             } catch (Exception e) {
                 return "-" + e;
+            }
+        }
+        else {
+            return "-Access denied, please login";
+        }
+    }
+
+    private String changeWorkingDir(String dir) {
+
+        System.out.println("Direcorty: " + dir);
+
+
+        if(status.equals(StatusEnum.LOGGEDIN)) {
+
+            try {
+                File file = new File(dir);
+                if (!file.isDirectory()) {
+                    file = file.getParentFile();
+                    if (file.exists()) {
+                        tmp_dir = dir;
+                        if (helper.getUserAccount(s_user).equals(" ") && helper.getUserPassword(s_user).equals(" ")) {
+                            s_dir = dir;
+                            return "!Changed working dir to " + dir;
+                        }
+                        else {
+                            if(!helper.getUserAccount(s_user).equals(" ") && !helper.getUserPassword(s_user).equals(" ")) {
+                                cdir_pass_acct = CdirSatatus.WAITBOTH;
+                            }
+                            else if(!helper.getUserAccount(s_user).equals(" ")) {
+                                cdir_pass_acct = CdirSatatus.WAITPASS;
+                            }
+                            else if(!helper.getUserPassword(s_user).equals(" ")) {
+                                cdir_pass_acct = CdirSatatus.WAITACCT;
+                            }
+                            return "+directory ok, send account/password";
+                        }
+                    }
+                    else {
+                        return "-Can't connect to directory because: specified directory does not exists";
+                    }
+                }
+                else {
+                    return "-Can't connect to directory because: specified path is not a valid directory";
+                }
+            }
+            catch (Exception e) {
+                return "-Can't connect to directory because: " + e;
             }
         }
         else {
