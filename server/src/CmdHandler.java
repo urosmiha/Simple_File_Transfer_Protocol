@@ -68,6 +68,8 @@ public class CmdHandler {
                 return listFiles(arg);
             case "CDIR":
                 return changeWorkingDir(arg);
+            case "KILL":
+                return DeleteFile(arg);
             default:
                 return "fe";
         }
@@ -339,6 +341,33 @@ public class CmdHandler {
         else {
             return "-Access denied, please login";
         }
+    }
+
+    /* Delete specified sile*/
+    private String DeleteFile(String arg) {
+
+        try {
+            File file = new File(s_dir + File.separator + arg);
+            if (!file.isDirectory()) {
+                System.out.println(file);
+                if (file.exists()) {
+                    if(file.delete())
+                    {
+                        return ("+" + arg + " deleted");
+                    }
+                }
+                else {
+                    return "-Not deleted because: the file you specified does not exists";
+                }
+            }
+            else {
+                return "-Not deleted because: the file you specified is directory, please specify file";
+            }
+        }
+        catch (Exception e) {
+            return "-Not deleted because: " + e;
+        }
+        return "-Not deleted because: Unexpected Error occurred";
     }
 
 }
