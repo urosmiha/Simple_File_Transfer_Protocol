@@ -27,7 +27,7 @@ public class CmdHandler {
 //            e.printStackTrace();
 //        }
 
-        s_dir = "user.dir/myDir/";
+        s_dir = System.getProperty("user.dir");
         status = StatusEnum.LOGGEDOUT;
         s_user = "";
         helper = new HelperFunctions();
@@ -247,9 +247,9 @@ public class CmdHandler {
         System.out.println(status);
         if(status.equals(StatusEnum.LOGGEDIN)) {
             try {
-                File folder = new File(System.getProperty(s_dir));
+                File folder = new File(s_dir);
                 File[] listOfFiles = folder.listFiles();
-                String response = "+" + System.getProperty(s_dir) + "\r\n";
+                String response = "+" + s_dir + "\r\n";
 
                 assert listOfFiles != null;
                 for (File listOfFile : listOfFiles) {
@@ -303,7 +303,7 @@ public class CmdHandler {
 
             try {
                 File file = new File(dir);
-                if (!file.isDirectory()) {
+                if (file.isDirectory()) {
                     file = file.getParentFile();
                     if (file.exists()) {
                         tmp_dir = dir;
