@@ -15,6 +15,9 @@ public class CmdHandler {
     private String tmp_dir = "";
     private String s_type;
 
+    private boolean wait_new_name = false;
+    private String old_name;
+
     private CdirSatatus cdir_pass_acct = CdirSatatus.WAITNON;
 
 //    DataOutputStream out;
@@ -70,6 +73,10 @@ public class CmdHandler {
                 return changeWorkingDir(arg);
             case "KILL":
                 return DeleteFile(arg);
+            case "NAME":
+                return checkName(arg);
+            case "TOBE":
+                return renameFile(arg);
             default:
                 return "fe";
         }
@@ -349,7 +356,6 @@ public class CmdHandler {
         try {
             File file = new File(s_dir + File.separator + arg);
             if (!file.isDirectory()) {
-                System.out.println(file);
                 if (file.exists()) {
                     if(file.delete())
                     {
@@ -370,4 +376,47 @@ public class CmdHandler {
         return "-Not deleted because: Unexpected Error occurred";
     }
 
+    private String renameFile(String name) {
+
+        if(wait_new_name) {
+            wait_new_name = false;
+            try {
+                File file = new File(s_dir + File.separator + old_name);
+                File file2 = new File(s_dir + File.separator + name);
+
+                if (!file2.exists()) {
+                    if(file.renameTo(file2)) {
+                        return "+" + old_name + " renamed to " + name;
+                    }
+                    else {
+                        return "-File wasn't renamed because of unexpected error";
+                    }
+                }
+                else {
+                    return "-File wasn't renamed because the file with same name already exists";
+                }
+            }
+            catch (Exception e) {
+                return "-File wasn't renamed because: " + e;
+            }
+        }
+        else {
+            return "-File wasn't renamed because you have to specify the name of the file first";
+        }
+    }
+
+    private String checkName(String name) {
+        try {
+            File file = new File(s_dir + File.separator + name);
+            if (!file.isDirectory() && file.exists()) {
+                wait_new_name = true;
+                old_name = name;
+                return "+File exists";
+            } else {
+                return ("-Can't find " + name);
+            }
+        } catch (Exception e) {
+            return ("-Error: " + e);
+        }
+    }
 }
