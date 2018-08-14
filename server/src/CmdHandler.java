@@ -18,6 +18,8 @@ public class CmdHandler {
     private boolean wait_new_name = false;
     private String old_name;
 
+    private boolean wait_next_retr = false;
+
     private CdirSatatus cdir_pass_acct = CdirSatatus.WAITNON;
 
 //    DataOutputStream out;
@@ -42,19 +44,36 @@ public class CmdHandler {
 
     protected String handleCommand(String cmd) {
 
-        // First check if the command is at least 5 characters long and if there is a space after the 4 letter command
-        // e.g. 'USER ' is valid, but 'USER' or 'USERx' will return error.
-        if(cmd.length() < 5 || cmd.charAt(4) != ' ') {
+        String cdm_id;
+
+        // Special case where command can be only 4 characters (i.e. for RETR)
+        if(cmd.length() == 4) {
+            if(cmd.equals("SEND") || cmd.equals("STOP")) {
+                cdm_id = cmd;
+            }
+            else {
+                return "-invalid command";
+            }
+        }   // First check if the command is at least 5 characters long and if there is a space after the 4 letter command. e.g. 'USER ' is valid, but 'USER' or 'USERx' will return error.
+        else if(cmd.length() < 5 || cmd.charAt(4) != ' ') {
             return "-invalid command";
-        } // Add an empty character if user specified 4 char command but no arguments and let argument checkers take care of it.
-        else if(cmd.length() < 6) {
+        }
+        else if(cmd.length() < 6) {     // Add an empty character if user specified 4 char command but no arguments and let argument checkers take care of it.
             cmd += " ";
         }
 
         // Split user command so we can get the 4 character command and argument
         // We know that the command always starts with 4 characters and rest is arguments.
-        String cdm_id = cmd.substring(0, Math.min(cmd.length(), 4));
-        String arg = cmd.substring(5,cmd.length());
+        cdm_id = cmd.substring(0, Math.min(cmd.length(), 4));
+
+        String arg;
+        if(cmd.length() > 4) {
+            arg = cmd.substring(5,cmd.length());
+        }
+        else {
+            arg = "";
+        }
+
 
         switch(cdm_id) {
             case "USER":
@@ -77,6 +96,12 @@ public class CmdHandler {
                 return checkName(arg);
             case "TOBE":
                 return renameFile(arg);
+            case "RETR":
+                return checkFileSize(arg);
+            case "STOP":
+                return stopFile();
+            case "SEND":
+                return sendFile();
             default:
                 return "fe";
         }
@@ -307,9 +332,7 @@ public class CmdHandler {
 
         System.out.println("Direcorty: " + dir);
 
-
         if(status.equals(StatusEnum.LOGGEDIN)) {
-
             try {
                 File file = new File(dir);
                 if (file.isDirectory()) {
@@ -352,71 +375,124 @@ public class CmdHandler {
 
     /* Delete specified sile*/
     private String DeleteFile(String arg) {
-
-        try {
-            File file = new File(s_dir + File.separator + arg);
-            if (!file.isDirectory()) {
-                if (file.exists()) {
-                    if(file.delete())
-                    {
-                        return ("+" + arg + " deleted");
+        if(status.equals(StatusEnum.LOGGEDIN)) {
+            try {
+                File file = new File(s_dir + File.separator + arg);
+                if (!file.isDirectory()) {
+                    if (file.exists()) {
+                        if (file.delete()) {
+                            return ("+" + arg + " deleted");
+                        }
+                    } else {
+                        return "-Not deleted because: the file you specified does not exists";
                     }
+                } else {
+                    return "-Not deleted because: the file you specified is directory, please specify file";
                 }
-                else {
-                    return "-Not deleted because: the file you specified does not exists";
-                }
+            } catch (Exception e) {
+                return "-Not deleted because: " + e;
             }
-            else {
-                return "-Not deleted because: the file you specified is directory, please specify file";
-            }
+            return "-Not deleted because: Unexpected Error occurred";
         }
-        catch (Exception e) {
-            return "-Not deleted because: " + e;
+        else {
+            return "-Access denied, please login";
         }
-        return "-Not deleted because: Unexpected Error occurred";
     }
 
     private String renameFile(String name) {
+        if(status.equals(StatusEnum.LOGGEDIN)) {
+            if (wait_new_name) {
+                wait_new_name = false;
+                try {
+                    File file = new File(s_dir + File.separator + old_name);
+                    File file2 = new File(s_dir + File.separator + name);
 
-        if(wait_new_name) {
-            wait_new_name = false;
-            try {
-                File file = new File(s_dir + File.separator + old_name);
-                File file2 = new File(s_dir + File.separator + name);
-
-                if (!file2.exists()) {
-                    if(file.renameTo(file2)) {
-                        return "+" + old_name + " renamed to " + name;
+                    if (!file2.exists()) {
+                        if (file.renameTo(file2)) {
+                            return "+" + old_name + " renamed to " + name;
+                        } else {
+                            return "-File wasn't renamed because of unexpected error";
+                        }
+                    } else {
+                        return "-File wasn't renamed because the file with same name already exists";
                     }
-                    else {
-                        return "-File wasn't renamed because of unexpected error";
-                    }
+                } catch (Exception e) {
+                    return "-File wasn't renamed because: " + e;
                 }
-                else {
-                    return "-File wasn't renamed because the file with same name already exists";
-                }
-            }
-            catch (Exception e) {
-                return "-File wasn't renamed because: " + e;
+            } else {
+                return "-File wasn't renamed because you have to specify the name of the file first";
             }
         }
         else {
-            return "-File wasn't renamed because you have to specify the name of the file first";
+            return "-Access denied, please login";
         }
     }
 
     private String checkName(String name) {
-        try {
-            File file = new File(s_dir + File.separator + name);
-            if (!file.isDirectory() && file.exists()) {
-                wait_new_name = true;
-                old_name = name;
-                return "+File exists";
-            } else {
-                return ("-Can't find " + name);
+        if(status.equals(StatusEnum.LOGGEDIN)) {
+            try {
+                File file = new File(s_dir + File.separator + name);
+                if (!file.isDirectory() && file.exists()) {
+                    wait_new_name = true;
+                    old_name = name;
+                    return "+File exists";
+                } else {
+                    return ("-Can't find " + name);
+                }
+            } catch (Exception e) {
+                return ("-Error: " + e);
             }
-        } catch (Exception e) {
-            return ("-Error: " + e);
+        }
+        else {
+            return "-Access denied, please login";
         }
     }
+
+    private String checkFileSize(String name) {
+        if(status.equals(StatusEnum.LOGGEDIN)) {
+            try {
+                File file = new File(s_dir + File.separator + name);
+                if (!file.isDirectory() && file.exists()) {
+                    wait_next_retr = true;
+                    return ("" + file.length());
+
+                } else {
+                    return ("-File doesn't exists");
+                }
+            } catch (Exception e) {
+                wait_next_retr = false;
+                return ("Error: " + e);
+            }
+        }
+        else {
+            return "-Access denied, please login";
+        }
+    }
+
+    private String sendFile() {
+        if(status.equals(StatusEnum.LOGGEDIN)) {
+            if(wait_next_retr) {
+                wait_next_retr = false;
+                return "+ok";
+            }
+        }
+        else {
+            return "-Access denied, please login";
+        }
+        return "-Please specify the file first";
+    }
+
+    private String stopFile() {
+        if(status.equals(StatusEnum.LOGGEDIN)) {
+            if(wait_next_retr) {
+                wait_next_retr = false;
+                return "+ok, RETR aborted";
+            }
+        }
+        else {
+            return "-Access denied, please login";
+        }
+        return "-Please specify the file first";
+    }
+
 }

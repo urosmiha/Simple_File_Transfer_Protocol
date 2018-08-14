@@ -16,7 +16,6 @@ public class Server {
 
         while(true) {
             Socket s = ss.accept();
-
             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
             DataOutputStream out = new DataOutputStream(s.getOutputStream());
 
@@ -37,6 +36,7 @@ public class Server {
                     tmp_response = tmp_response.substring(tmp_response.indexOf("\n") + 1);
                     System.out.println(tmp_msg);
                     out.writeBytes(tmp_msg);
+
                 }
                 out.writeBytes(tmp_response + '\0' + '\n');
             }
