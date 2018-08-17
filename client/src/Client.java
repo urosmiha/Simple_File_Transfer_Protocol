@@ -10,6 +10,9 @@ public class Client {
             int port = 8085;
 
             boolean init = true;
+            boolean wait_file = false;
+            String file_name = "default.txt";
+            String file_data = "";
 
             for(;;) {
 
@@ -34,15 +37,30 @@ public class Client {
 
                 Umessage = inServer.readLine();
                 System.out.println("From server: " + Umessage);
+                file_data = Umessage;
 
                 while(Umessage.charAt(Umessage.length()-1) != '\0') {
                     Umessage = inServer.readLine();
+                    file_data += Umessage + System.lineSeparator();
                     System.out.println(Umessage);
                 }
-
-
-
                 s.close();
+
+                // If command is RETR and response is not + or - (meaning we can send file)
+                if(Lmessage.contains("RETR") && !Umessage.contains("+") && !Umessage.contains("+")) {
+                    wait_file = true;
+                    file_name = Lmessage.substring(5);
+                    System.out.println("Filename: " + file_name);
+                }
+                else if (wait_file && Lmessage.equals("SEND")) {
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(file_name));
+
+                    writer.write(file_data);
+                    writer.close();
+                }
+                else {
+                    wait_file = false;
+                }
 
                 if(Lmessage.equals("DONE")) {
                     System.out.println("Bye...");

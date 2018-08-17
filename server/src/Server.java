@@ -25,7 +25,12 @@ public class Server {
             response = cmd_handler.handleCommand(cmd_in);
             System.out.println(response);
 
-            if(response.contains("\n")){
+            if(response.contains("SEND")) {
+                System.out.println("Sending file...");
+                fileSender fs = new fileSender(out);
+                fs.sendFile(cmd_handler.getType(), response.substring(5));
+            }
+            else if(response.contains("\n")){
                 int count = helper.countChar(response, '\n');
                 System.out.println(count);
                 String tmp_msg = response;

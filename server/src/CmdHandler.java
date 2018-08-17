@@ -2,6 +2,10 @@ import javax.sql.rowset.spi.SyncResolver;
 import java.awt.*;
 import java.io.*;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.charset.Charset;
 
 public class CmdHandler {
 
@@ -13,12 +17,13 @@ public class CmdHandler {
 
     private String s_dir;
     private String tmp_dir = "";
-    private String s_type;
+    private TYPE s_type;
 
     private boolean wait_new_name = false;
     private String old_name;
 
     private boolean wait_next_retr = false;
+    private String file_name = "";
 
     private CdirSatatus cdir_pass_acct = CdirSatatus.WAITNON;
 
@@ -38,8 +43,7 @@ public class CmdHandler {
         helper = new HelperFunctions();
         s_account = "";
         s_password = "";
-
-        s_type = "";
+        s_type = TYPE.ASCII;    // Set type as ascii by default
     }
 
     protected String handleCommand(String cmd) {
@@ -259,13 +263,13 @@ public class CmdHandler {
 
             switch (type) {
                 case "A":
-                    s_type = "Ascii";
+                    s_type = TYPE.ASCII;
                     break;
                 case "B":
-                    s_type = "Binary";
+                    s_type = TYPE.BINARY;
                     break;
                 case "C":
-                    s_type = "Continuous";
+                    s_type = TYPE.CONTINUOUS;
                     break;
                 default:
                     return "-Type not valid";
@@ -275,6 +279,10 @@ public class CmdHandler {
         else {
             return "-Access denied, please login";
         }
+    }
+
+    public TYPE getType() {
+        return s_type;
     }
 
     private String listFiles(String format) {
@@ -454,6 +462,7 @@ public class CmdHandler {
                 File file = new File(s_dir + File.separator + name);
                 if (!file.isDirectory() && file.exists()) {
                     wait_next_retr = true;
+                    file_name = name;
                     return ("" + file.length());
 
                 } else {
@@ -473,7 +482,25 @@ public class CmdHandler {
         if(status.equals(StatusEnum.LOGGEDIN)) {
             if(wait_next_retr) {
                 wait_next_retr = false;
-                return "+ok";
+                // Use this only if the current mode is ascii
+                if(s_type == TYPE.ASCII) {
+                    StringBuffer contents = new StringBuffer();
+                    BufferedReader input = null;
+                    try {
+                        input = new BufferedReader(new FileReader(file_name), 1);
+                        String line = null; //not declared within while loop
+                        while ((line = input.readLine()) != null) {
+                            contents.append(line);
+                            contents.append(System.getProperty("line.separator"));
+                        }
+                        return contents.toString();
+                    } catch (IOException ex) {
+                        return "-Bad request: " + ex;
+                    }
+                }
+                else {
+                    return "SEND " + file_name;
+                }
             }
         }
         else {
@@ -494,5 +521,6 @@ public class CmdHandler {
         }
         return "-Please specify the file first";
     }
+
 
 }
