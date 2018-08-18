@@ -11,7 +11,7 @@ public class fileSender {
         this.out = out;
     }
 
-    public void sendFile(TYPE type, String file_name) {
+    public void sendFile(Type type, String file_name) {
 
         // The name of the file to open.
         try {
@@ -31,8 +31,10 @@ public class fileSender {
                 // Of course you wouldn't want to do this with
                 // a 'real' binary file.
                 System.out.println(new String(buffer));
+                out.writeByte(nRead);
                 total += nRead;
             }
+
 
             // Always close files.
             inputStream.close();

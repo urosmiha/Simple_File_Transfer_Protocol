@@ -1,11 +1,4 @@
-import javax.sql.rowset.spi.SyncResolver;
-import java.awt.*;
 import java.io.*;
-import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.charset.Charset;
 
 public class CmdHandler {
 
@@ -17,7 +10,7 @@ public class CmdHandler {
 
     private String s_dir;
     private String tmp_dir = "";
-    private TYPE s_type;
+    private Type s_type;
 
     private boolean wait_new_name = false;
     private String old_name;
@@ -43,7 +36,7 @@ public class CmdHandler {
         helper = new HelperFunctions();
         s_account = "";
         s_password = "";
-        s_type = TYPE.ASCII;    // Set type as ascii by default
+        s_type = Type.ASCII;    // Set type as ascii by default
     }
 
     protected String handleCommand(String cmd) {
@@ -263,25 +256,25 @@ public class CmdHandler {
 
             switch (type) {
                 case "A":
-                    s_type = TYPE.ASCII;
+                    s_type = Type.ASCII;
                     break;
                 case "B":
-                    s_type = TYPE.BINARY;
+                    s_type = Type.BINARY;
                     break;
                 case "C":
-                    s_type = TYPE.CONTINUOUS;
+                    s_type = Type.CONTINUOUS;
                     break;
                 default:
                     return "-Type not valid";
             }
-            return "+Using " + s_type + "mode";
+            return "+Using " + s_type + " mode";
         }
         else {
             return "-Access denied, please login";
         }
     }
 
-    public TYPE getType() {
+    public Type getType() {
         return s_type;
     }
 
@@ -483,7 +476,7 @@ public class CmdHandler {
             if(wait_next_retr) {
                 wait_next_retr = false;
                 // Use this only if the current mode is ascii
-                if(s_type == TYPE.ASCII) {
+                if(s_type == Type.ASCII) {
                     StringBuffer contents = new StringBuffer();
                     BufferedReader input = null;
                     try {
@@ -498,15 +491,55 @@ public class CmdHandler {
                         return "-Bad request: " + ex;
                     }
                 }
-                else {
-                    return "SEND " + file_name;
-                }
             }
         }
         else {
             return "-Access denied, please login";
         }
         return "-Please specify the file first";
+    }
+
+    public void sendBinary(DataOutputStream out) {
+        String response = "-";
+        if(status.equals(StatusEnum.LOGGEDIN)) {
+            if(wait_next_retr) {
+                wait_next_retr = false;
+                try {
+                    File file = new File(s_dir + File.separator + file_name);
+                    long file_size = file.length();
+                    System.out.println(file_size);
+                    // Use this for reading the data.
+
+                    FileInputStream fis = new FileInputStream(file_name);
+                    byte[] buffer = new byte[(int)file_size];
+
+                    while (fis.read(buffer) > 0) {
+                        out.write(buffer);
+                    }
+
+
+                } catch (FileNotFoundException ex) {
+                    System.out.println("Unable to open file '" + file_name + "'");
+                    response = "-Unable to open file " + file_name;
+                } catch (IOException ex) {
+                    System.out.println("Error reading file '" + file_name + "'");
+                    response = "Error getting file: " + file_name;
+                }
+            }
+            else {
+                response = "\"-Please specify the file first";
+            }
+        }
+        else {
+            response = "-Access denied, please login";
+        }
+
+        try {
+            response = response + '\0' + '\n';
+            out.writeBytes(response);
+        } catch (IOException e) {
+            System.out.println("Error: " + e);
+        }
     }
 
     private String stopFile() {

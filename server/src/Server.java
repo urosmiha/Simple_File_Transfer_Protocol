@@ -1,4 +1,3 @@
-import java.awt.*;
 import java.net.*;
 import java.io.*;
 
@@ -22,32 +21,31 @@ public class Server {
             cmd_in = in.readLine();
             System.out.println(("Received: " + cmd_in));
 
-            response = cmd_handler.handleCommand(cmd_in);
-            System.out.println(response);
-
-            if(response.contains("SEND")) {
-                System.out.println("Sending file...");
-                fileSender fs = new fileSender(out);
-                fs.sendFile(cmd_handler.getType(), response.substring(5));
-            }
-            else if(response.contains("\n")){
-                int count = helper.countChar(response, '\n');
-                System.out.println(count);
-                String tmp_msg = response;
-                String tmp_response = response;
-                System.out.print(response);
-                for(int i=0; i < count; i++) {
-                    tmp_msg = tmp_response.substring(0, tmp_response.indexOf("\n"));
-                    tmp_response = tmp_response.substring(tmp_response.indexOf("\n") + 1);
-                    System.out.println(tmp_msg);
-                    out.writeBytes(tmp_msg);
-
-                }
-                out.writeBytes(tmp_response + '\0' + '\n');
+            if(cmd_handler.getType() != Type.ASCII && cmd_in.equals("SEND")) {
+                cmd_handler.sendBinary(out);
             }
             else {
-                response = response + '\0' + '\n';
-                out.writeBytes(response);
+                response = cmd_handler.handleCommand(cmd_in);
+                System.out.println(response);
+
+                if (response.contains("\n")) {
+                    int count = helper.countChar(response, '\n');
+                    System.out.println(count);
+                    String tmp_msg = response;
+                    String tmp_response = response;
+                    System.out.print(response);
+                    for (int i = 0; i < count; i++) {
+                        tmp_msg = tmp_response.substring(0, tmp_response.indexOf("\n"));
+                        tmp_response = tmp_response.substring(tmp_response.indexOf("\n") + 1);
+                        System.out.println(tmp_msg);
+                        out.writeBytes(tmp_msg);
+
+                    }
+                    out.writeBytes(tmp_response + '\0' + '\n');
+                } else {
+                    response = response + '\0' + '\n';
+                    out.writeBytes(response);
+                }
             }
 
             if(cmd_in.equals("DONE")) {
