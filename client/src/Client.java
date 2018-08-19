@@ -13,6 +13,7 @@ public class Client {
             boolean wait_file = false;
             String file_name = "default.txt";
             String file_data = "";
+            int file_size = 0;
 
             Type c_type = Type.ASCII;
 
@@ -31,12 +32,11 @@ public class Client {
                 if(wait_file && Lmessage.equals("SEND") && c_type != Type.ASCII) {
                     // READ IT AS BINARY OR/AND CONTINUOUS
                     DataInputStream dis = new DataInputStream(s.getInputStream());
-                    FileOutputStream fos = new FileOutputStream("testfile.jpg");
-                    byte[] buffer = new byte[30716];
+                    FileOutputStream fos = new FileOutputStream(file_name);
+                    byte[] buffer = new byte[file_size];
 
-                    int filesize = 30716; // Send file size in separate msg
                     int totalRead = 0;
-                    int remaining = filesize;
+                    int remaining = file_size;
                     int read = 0;
                     while((read = dis.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
                         totalRead += read;
@@ -46,6 +46,7 @@ public class Client {
                     }
                     fos.close();
                     dis.close();
+                    wait_file = false;
                 }
                 else {
                     Umessage = inServer.readLine();
@@ -57,6 +58,15 @@ public class Client {
                         file_data += Umessage + System.lineSeparator();
                         System.out.println(Umessage);
                     }
+
+                    if (wait_file && Lmessage.equals("SEND") && c_type == Type.ASCII) {
+                        // WRITE TO A ASCII FILE
+                        BufferedWriter writer = new BufferedWriter(new FileWriter(file_name));
+                        writer.write(file_data);
+                        writer.close();
+                        wait_file = false;
+                    }
+
                     s.close();
                 }
 
@@ -83,19 +93,11 @@ public class Client {
                 }
 
                 // If command is RETR and response is not + or - (meaning we can send file)
-                if(!wait_file && Lmessage.contains("RETR") && !Umessage.contains("+") && !Umessage.contains("+")) {
+                if(!wait_file && Lmessage.contains("RETR") && !Umessage.contains("+") && !Umessage.contains("-")) {
                     wait_file = true;
                     file_name = Lmessage.substring(5);
-                    System.out.println("Filename: " + file_name);
-                }
-                else if (wait_file && Lmessage.equals("SEND")) {
-                    if(c_type == Type.ASCII) {
-                        // WRITE TO A ASCII FILE
-                        BufferedWriter writer = new BufferedWriter(new FileWriter(file_name));
-                        writer.write(file_data);
-                        writer.close();
-                        wait_file = false;
-                    }
+                    String size = Umessage.replaceAll("[^0-9]","");     // Remove everything that is not a number
+                    file_size = Integer.parseInt(size);
                 }
                 else {
                     wait_file = false;
