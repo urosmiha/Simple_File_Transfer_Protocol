@@ -30,6 +30,9 @@ public class Client {
             DataOutputStream out = new DataOutputStream(s.getOutputStream());
             BufferedReader inServer = new BufferedReader(new InputStreamReader(s.getInputStream()));
 
+            //================================================
+            // SENDING STUFF TO SERVER
+            //================================================
             if(store_file) {
                 store_file = false;
                 try {
@@ -45,7 +48,6 @@ public class Client {
                             tmp_response = tmp_response.substring(tmp_response.indexOf("\n") + 1);
                             System.out.println(tmp_msg);
                             out.writeBytes(tmp_msg);
-
                         }
                         out.writeBytes(tmp_response + '\0' + '\n');
                     } else {
@@ -64,10 +66,11 @@ public class Client {
                 out.writeBytes(user_msg + '\n');
             }
 
+            //***********************************************
 
-
-
-
+            //================================================
+            // READING FROM THE SERVER
+            //================================================
             if(wait_file && user_msg.equals("SEND") && c_type != Type.ASCII) {
                 // READ IT AS BINARY OR/AND CONTINUOUS
                 DataInputStream dis = new DataInputStream(s.getInputStream());
@@ -109,8 +112,11 @@ public class Client {
                 s.close();
             }
 
+            //************************************************
 
-            // HELPER STATEMENTS ******************************
+            //================================================
+            // HELPER CLIENT LOGIC
+            //================================================
 
             if(user_msg.contains("TYPE")) {
                 if(server_msg.contains("+Using")) {
@@ -161,8 +167,13 @@ public class Client {
                 System.out.println("Bye...");
                 break;
             }
+            //************************************************
         }
     }
+
+    //================================================
+    // HELPER FUNCTIONS
+    //================================================
 
     private static Type changeType(String type, Type c_type) {
         switch (type) {
@@ -205,5 +216,4 @@ public class Client {
         }
         return counter;
     }
-
 }

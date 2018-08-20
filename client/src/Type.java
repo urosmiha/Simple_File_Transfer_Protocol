@@ -1,5 +1,6 @@
 public enum Type {
     ASCII,
     BINARY,
-    CONTINUOUS
+    CONTINUOUS,
+    NONE
 }

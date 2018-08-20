@@ -471,7 +471,7 @@ public class CmdHandler {
 
                     Type file_type = getFileType(name);
 
-                    if(file_type == s_type || (file_type == Type.CONTINUOUS && s_type == Type.BINARY)) {
+                    if(file_type == s_type || (file_type == Type.BINARY && s_type == Type.CONTINUOUS)) {
                         wait_next_retr = true;
                         file_name = name;
                         return ("" + file.length());
@@ -479,9 +479,6 @@ public class CmdHandler {
                     else {
                         return ("-Can't send " + file_type + " file as " + s_type);
                     }
-
-
-
                 } else {
                     return "-File doesn't exists";
                 }
@@ -593,35 +590,42 @@ public class CmdHandler {
                 try {
                     sub_cmd = arg.substring(0, Math.min(arg.length(), 3));
                     file_name = arg.substring(4);
-                    File file = new File(s_dir + File.separator + file_name);
-                    //                if(!file.isDirectory() || file.exists()) {
-                    store_size = (int) file.length();
-                    store_file = true;
-                    store_file_name = file_name;
-                    switch (sub_cmd) {
-                        case "NEW":
-                            if (file.exists()) {
-                                if (allow_gen) {
-                                    return "+File exists, will create new generation of file";
+
+                    Type file_type = getFileType(file_name);
+                    if(file_type == s_type || (file_type == Type.BINARY && s_type == Type.CONTINUOUS)) {
+
+                        File file = new File(s_dir + File.separator + file_name);
+                        store_size = (int) file.length();
+                        store_file = true;
+                        store_file_name = file_name;
+                        switch (sub_cmd) {
+                            case "NEW":
+                                if (file.exists()) {
+                                    if (allow_gen) {
+                                        return "+File exists, will create new generation of file";
+                                    } else {
+                                        store_file = false;
+                                        return "-File exists, but system doesn't support generations";
+                                    }
                                 } else {
-                                    store_file = false;
-                                    return "-File exists, but system doesn't support generations";
+                                    return "+File does not exists, will create new file";
                                 }
-                            } else {
-                                return "+File does not exists, will create new file";
-                            }
-                        case "OLD":
-                            if (file.exists()) {
-                                return "+Will write over old file";
-                            } else {
-                                return "+Will create new file";
-                            }
-                        case "APP":
-                            if (file.exists()) {
-                                return "+Will append to file";
-                            } else {
-                                return "+Will create file";
-                            }
+                            case "OLD":
+                                if (file.exists()) {
+                                    return "+Will write over old file";
+                                } else {
+                                    return "+Will create new file";
+                                }
+                            case "APP":
+                                if (file.exists()) {
+                                    return "+Will append to file";
+                                } else {
+                                    return "+Will create file";
+                                }
+                        }
+                    }
+                    else {
+                        return ("-Can't send " + file_type + " file as " + s_type);
                     }
                 } catch (Exception e) {
                     return "-Bad request: " + e;
@@ -735,7 +739,5 @@ public class CmdHandler {
         else {
             return Type.NONE;
         }
-
-
     }
 }
