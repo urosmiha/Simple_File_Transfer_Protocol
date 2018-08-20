@@ -18,8 +18,51 @@ public class Server {
             BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
             DataOutputStream out = new DataOutputStream(s.getOutputStream());
 
-            cmd_in = in.readLine();
-            System.out.println(("Received: " + cmd_in));
+            if(cmd_handler.getStoreState()) {
+                String file_data = "";
+                if(cmd_handler.getType() == Type.ASCII) {
+                    cmd_in = in.readLine();
+                    System.out.println("Received: " + cmd_in);
+                    file_data = cmd_in;
+
+                    while (cmd_in.charAt(cmd_in.length() - 1) != '\0') {
+                        cmd_in = in.readLine();
+                        file_data += cmd_in + System.lineSeparator();
+                        System.out.println(cmd_in);
+                    }
+                    // WRITE TO A ASCII FILE
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(cmd_handler.getStoreFileName()));
+                    writer.write(file_data);
+                    writer.close();
+                }
+                else {
+                    // READ IT AS BINARY OR/AND CONTINUOUS
+//                    DataInputStream dis = new DataInputStream(s.getInputStream());
+//                    FileOutputStream fos = new FileOutputStream(file_name);
+//                    byte[] buffer = new byte[file_size];
+//
+//                    int totalRead = 0;
+//                    int remaining = file_size;
+//                    int read = 0;
+//                    while((read = dis.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
+//                        totalRead += read;
+//                        remaining -= read;
+//                        System.out.println("read " + totalRead + " bytes.");
+//                        fos.write(buffer, 0, read);
+//                    }
+//                    fos.close();
+//                    dis.close();
+                }
+
+                cmd_handler.resetStoreState();
+                cmd_in = "STOR -";
+            }
+            else {
+                cmd_in = in.readLine();
+                System.out.println(("Received: " + cmd_in));
+            }
+
+
 
             if(cmd_handler.getType() != Type.ASCII && cmd_in.equals("SEND")) {
                 cmd_handler.sendBinary(out);
