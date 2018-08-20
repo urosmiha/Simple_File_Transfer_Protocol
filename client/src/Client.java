@@ -19,6 +19,9 @@ public class Client {
 
         Type c_type = Type.ASCII;
 
+        String response = "";
+        boolean store_file = false;
+
         for(;;) {
 
             Socket s = new Socket(IP, port);
@@ -27,9 +30,43 @@ public class Client {
             DataOutputStream out = new DataOutputStream(s.getOutputStream());
             BufferedReader inServer = new BufferedReader(new InputStreamReader(s.getInputStream()));
 
-            System.out.println("Enter command: ");  // Get user input
-            user_msg = inUser.readLine();
-            out.writeBytes(user_msg + '\n');
+            if(store_file) {
+                store_file = false;
+                try {
+                    response = readFile(send_file_name);
+                    if (response.contains("\n")) {
+                        int count = countChar(response, '\n');
+                        System.out.println(count);
+                        String tmp_msg = response;
+                        String tmp_response = response;
+                        System.out.print(response);
+                        for (int i = 0; i < count; i++) {
+                            tmp_msg = tmp_response.substring(0, tmp_response.indexOf("\n"));
+                            tmp_response = tmp_response.substring(tmp_response.indexOf("\n") + 1);
+                            System.out.println(tmp_msg);
+                            out.writeBytes(tmp_msg);
+
+                        }
+                        out.writeBytes(tmp_response + '\0' + '\n');
+                    } else {
+                        response = response + '\0' + '\n';
+                        out.writeBytes(response);
+                    }
+                }
+                catch (Exception e) {
+                    System.out.println("Error: " + e);
+                }
+
+            }
+            else {
+                System.out.println("Enter command: ");  // Get user input
+                user_msg = inUser.readLine();
+                out.writeBytes(user_msg + '\n');
+            }
+
+
+
+
 
             if(wait_file && user_msg.equals("SEND") && c_type != Type.ASCII) {
                 // READ IT AS BINARY OR/AND CONTINUOUS
@@ -53,7 +90,7 @@ public class Client {
             else {
                 server_msg = inServer.readLine();
                 System.out.println("From server: " + server_msg);
-                file_data = server_msg;
+                file_data = server_msg + System.lineSeparator();
 
                 while (server_msg.charAt(server_msg.length() - 1) != '\0') {
                     server_msg = inServer.readLine();
@@ -72,6 +109,9 @@ public class Client {
                 s.close();
             }
 
+
+            // HELPER STATEMENTS ******************************
+
             if(user_msg.contains("TYPE")) {
                 if(server_msg.contains("+Using")) {
                     String type = user_msg.substring(5);
@@ -87,19 +127,7 @@ public class Client {
             }
             else if(send_file && user_msg.contains("SIZE") && server_msg.contains("+ok")) {
                 if(c_type == Type.ASCII) {
-                    StringBuffer contents = new StringBuffer();
-                    BufferedReader input = null;
-                    try {
-                        input = new BufferedReader(new FileReader(send_file_name), 1);
-                        String line = null; //not declared within while loop
-                        while ((line = input.readLine()) != null) {
-                            contents.append(line);
-                            contents.append(System.getProperty("line.separator"));
-                        }
-                    } catch (IOException ex) {
-                        System.out.println("-Bad request: " + ex);
-                    }
-                    out.writeBytes(contents.toString());
+                    store_file = true;
                 }
                 else {
                     try {
@@ -134,8 +162,6 @@ public class Client {
                 break;
             }
         }
-
-
     }
 
     private static Type changeType(String type, Type c_type) {
@@ -153,4 +179,31 @@ public class Client {
                 return c_type;
         }
     }
+
+    private static String readFile(String file_name) {
+        StringBuffer contents = new StringBuffer();
+        BufferedReader input = null;
+        try {
+            input = new BufferedReader(new FileReader(file_name), 1);
+            String line = null; //not declared within while loop
+            while ((line = input.readLine()) != null) {
+                contents.append(line);
+                contents.append(System.getProperty("line.separator"));
+            }
+        } catch (IOException ex) {
+            System.out.println("-Bad request: " + ex);
+        }
+         return contents.toString();
+    }
+
+    private static int countChar(String s, char ch) {
+        int counter = 0;
+        for( int i=0; i<s.length(); i++ ) {
+            if( s.charAt(i) == ch ) {
+                counter++;
+            }
+        }
+        return counter;
+    }
+
 }

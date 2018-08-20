@@ -21,9 +21,10 @@ public class Server {
             if(cmd_handler.getStoreState()) {
                 String file_data = "";
                 if(cmd_handler.getType() == Type.ASCII) {
+                    System.out.println("Waiting for file");
                     cmd_in = in.readLine();
                     System.out.println("Received: " + cmd_in);
-                    file_data = cmd_in;
+                    file_data = cmd_in + System.lineSeparator();
 
                     while (cmd_in.charAt(cmd_in.length() - 1) != '\0') {
                         cmd_in = in.readLine();
@@ -55,7 +56,7 @@ public class Server {
                 }
 
                 cmd_handler.resetStoreState();
-                cmd_in = "STOR -";
+                cmd_in = "NONE ";
             }
             else {
                 cmd_in = in.readLine();

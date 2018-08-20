@@ -80,7 +80,6 @@ public class CmdHandler {
             arg = "";
         }
 
-
         switch(cdm_id) {
             case "USER":
                 return authoriseUser(arg);
@@ -112,8 +111,10 @@ public class CmdHandler {
                 return checkStoreFile(arg);
             case "SIZE":
                 return checkStoreSize(arg);
+            case "NONE":
+                return "Stored File";
             default:
-                return "fe";
+                return "NONE";
         }
     }
 
@@ -585,6 +586,7 @@ public class CmdHandler {
 
         if(status.equals(StatusEnum.LOGGEDIN)) {
             // Check if the second part of the command is valid (i.e. only accept NEW, OLD, APP)
+            System.out.println(arg.length());
             if (arg.length() < 5) {
                 return "-Bad request";
             } else {
@@ -625,7 +627,7 @@ public class CmdHandler {
                     return "-Bad request: " + e;
                 }
             }
-            return "-Bad request";
+            return "-Bad request. Try Again";
         }
         else {
             return "-Access denied, please login";
@@ -634,8 +636,14 @@ public class CmdHandler {
 
     private String checkStoreSize(String size) {
         if(store_file) {
-            String tmp = size.replaceAll("[^0-9]","");     // Remove everything that is not a number
-            int store_size = Integer.getInteger(tmp);
+            String tmp = size.replaceAll("[^0-9]","");     // Remove everything that is not a
+
+            try {
+                int store_size = Integer.parseInt(tmp);
+            }
+            catch (Exception e) {
+                return ("-Bad request: " + e);
+            }
 
             if(store_size > max_store_size) {
                 store_file = false;
@@ -662,7 +670,7 @@ public class CmdHandler {
 
     protected void resetStoreState() {
         store_file = false;
-        wait_store = true;
+        wait_store = false;
     }
 
 //    public int getStoreSize() {
