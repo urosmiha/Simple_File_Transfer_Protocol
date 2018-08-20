@@ -1,7 +1,6 @@
-import javax.sql.rowset.spi.SyncResolver;
-import java.awt.*;
+import javafx.stage.Stage;
+
 import java.io.*;
-import java.net.Socket;
 
 public class CmdHandler {
 
@@ -13,12 +12,20 @@ public class CmdHandler {
 
     private String s_dir;
     private String tmp_dir = "";
-    private String s_type;
+    private Type s_type;
 
     private boolean wait_new_name = false;
     private String old_name;
 
     private boolean wait_next_retr = false;
+    private String file_name = "";
+
+    private boolean allow_gen = true;
+    private boolean store_file = false;
+    private boolean wait_store = false;
+    private String store_file_name = "default.txt";
+    private int store_size = 0;
+    private int max_store_size = 8192;
 
     private CdirSatatus cdir_pass_acct = CdirSatatus.WAITNON;
 
@@ -38,8 +45,7 @@ public class CmdHandler {
         helper = new HelperFunctions();
         s_account = "";
         s_password = "";
-
-        s_type = "";
+        s_type = Type.ASCII;    // Set type as ascii by default
     }
 
     protected String handleCommand(String cmd) {
@@ -58,9 +64,9 @@ public class CmdHandler {
         else if(cmd.length() < 5 || cmd.charAt(4) != ' ') {
             return "-invalid command";
         }
-        else if(cmd.length() < 6) {     // Add an empty character if user specified 4 char command but no arguments and let argument checkers take care of it.
-            cmd += " ";
-        }
+//        else if(cmd.length() < 6) {     // Add an empty character if user specified 4 char command but no arguments and let argument checkers take care of it.
+//            cmd += " ";
+//        }
 
         // Split user command so we can get the 4 character command and argument
         // We know that the command always starts with 4 characters and rest is arguments.
@@ -102,6 +108,10 @@ public class CmdHandler {
                 return stopFile();
             case "SEND":
                 return sendFile();
+            case "STOR":
+                return checkStoreFile(arg);
+            case "SIZE":
+                return checkStoreSize(arg);
             default:
                 return "fe";
         }
@@ -259,22 +269,26 @@ public class CmdHandler {
 
             switch (type) {
                 case "A":
-                    s_type = "Ascii";
+                    s_type = Type.ASCII;
                     break;
                 case "B":
-                    s_type = "Binary";
+                    s_type = Type.BINARY;
                     break;
                 case "C":
-                    s_type = "Continuous";
+                    s_type = Type.CONTINUOUS;
                     break;
                 default:
                     return "-Type not valid";
             }
-            return "+Using " + s_type + "mode";
+            return "+Using " + s_type + " mode";
         }
         else {
             return "-Access denied, please login";
         }
+    }
+
+    public Type getType() {
+        return s_type;
     }
 
     private String listFiles(String format) {
@@ -453,11 +467,22 @@ public class CmdHandler {
             try {
                 File file = new File(s_dir + File.separator + name);
                 if (!file.isDirectory() && file.exists()) {
-                    wait_next_retr = true;
-                    return ("" + file.length());
+
+                    Type file_type = getFileType(name);
+
+                    if(file_type == s_type || (file_type == Type.CONTINUOUS && s_type == Type.BINARY)) {
+                        wait_next_retr = true;
+                        file_name = name;
+                        return ("" + file.length());
+                    }
+                    else {
+                        return ("-Can't send " + file_type + " file as " + s_type);
+                    }
+
+
 
                 } else {
-                    return ("-File doesn't exists");
+                    return "-File doesn't exists";
                 }
             } catch (Exception e) {
                 wait_next_retr = false;
@@ -473,13 +498,71 @@ public class CmdHandler {
         if(status.equals(StatusEnum.LOGGEDIN)) {
             if(wait_next_retr) {
                 wait_next_retr = false;
-                return "+ok";
+                // Use this only if the current mode is ascii
+                if(s_type == Type.ASCII) {
+                    StringBuffer contents = new StringBuffer();
+                    BufferedReader input = null;
+                    try {
+                        input = new BufferedReader(new FileReader(file_name), 1);
+                        String line = null; //not declared within while loop
+                        while ((line = input.readLine()) != null) {
+                            contents.append(line);
+                            contents.append(System.getProperty("line.separator"));
+                        }
+                        return contents.toString();
+                    } catch (IOException ex) {
+                        return "-Bad request: " + ex;
+                    }
+                }
             }
         }
         else {
             return "-Access denied, please login";
         }
         return "-Please specify the file first";
+    }
+
+    public void sendBinary(DataOutputStream out) {
+        String response = "-";
+        if(status.equals(StatusEnum.LOGGEDIN)) {
+            if(wait_next_retr) {
+                wait_next_retr = false;
+                try {
+                    File file = new File(s_dir + File.separator + file_name);
+                    long file_size = file.length();
+                    System.out.println(file_size);
+                    // Use this for reading the data.
+
+                    FileInputStream fis = new FileInputStream(file_name);
+                    byte[] buffer = new byte[(int)file_size];
+
+                    while (fis.read(buffer) > 0) {
+                        out.write(buffer);
+                    }
+
+
+                } catch (FileNotFoundException ex) {
+                    System.out.println("Unable to open file '" + file_name + "'");
+                    response = "-Unable to open file " + file_name;
+                } catch (IOException ex) {
+                    System.out.println("Error reading file '" + file_name + "'");
+                    response = "Error getting file: " + file_name;
+                }
+            }
+            else {
+                response = "\"-Please specify the file first";
+            }
+        }
+        else {
+            response = "-Access denied, please login";
+        }
+
+        try {
+            response = response + '\0' + '\n';
+            out.writeBytes(response);
+        } catch (IOException e) {
+            System.out.println("Error: " + e);
+        }
     }
 
     private String stopFile() {
@@ -495,4 +578,156 @@ public class CmdHandler {
         return "-Please specify the file first";
     }
 
+    private String checkStoreFile(String arg) {
+
+        String sub_cmd = "";
+        String file_name = "";
+
+        if(status.equals(StatusEnum.LOGGEDIN)) {
+            // Check if the second part of the command is valid (i.e. only accept NEW, OLD, APP)
+            if (arg.length() < 5) {
+                return "-Bad request";
+            } else {
+                try {
+                    sub_cmd = arg.substring(0, Math.min(arg.length(), 3));
+                    file_name = arg.substring(4);
+                    File file = new File(s_dir + File.separator + file_name);
+                    //                if(!file.isDirectory() || file.exists()) {
+                    store_size = (int) file.length();
+                    store_file = true;
+                    store_file_name = file_name;
+                    switch (sub_cmd) {
+                        case "NEW":
+                            if (file.exists()) {
+                                if (allow_gen) {
+                                    return "+File exists, will create new generation of file";
+                                } else {
+                                    store_file = false;
+                                    return "-File exists, but system doesn't support generations";
+                                }
+                            } else {
+                                return "+File does not exists, will create new file";
+                            }
+                        case "OLD":
+                            if (file.exists()) {
+                                return "+Will write over old file";
+                            } else {
+                                return "+Will create new file";
+                            }
+                        case "APP":
+                            if (file.exists()) {
+                                return "+Will append to file";
+                            } else {
+                                return "+Will create file";
+                            }
+                    }
+                } catch (Exception e) {
+                    return "-Bad request: " + e;
+                }
+            }
+            return "-Bad request";
+        }
+        else {
+            return "-Access denied, please login";
+        }
+    }
+
+    private String checkStoreSize(String size) {
+        if(store_file) {
+            String tmp = size.replaceAll("[^0-9]","");     // Remove everything that is not a number
+            int store_size = Integer.getInteger(tmp);
+
+            if(store_size > max_store_size) {
+                store_file = false;
+                return "-Not enough room, don't send it";
+            }
+            else {
+                store_file = false;
+                wait_store = true;
+                return "+ok, waiting for file";
+            }
+        }
+        else {
+            return "-Please specify the file first";
+        }
+    }
+
+    protected void storeFile(String arg) {
+
+    }
+
+    protected boolean getStoreState() {
+        return wait_store;
+    }
+
+    protected void resetStoreState() {
+        store_file = false;
+        wait_store = true;
+    }
+
+//    public int getStoreSize() {
+//        return store_size;
+//    }
+
+    protected String getStoreFileName() {
+       return store_file_name;
+    }
+
+    /* Look at the file extenstion and return the type of the file based on that
+        Can checks specific files.
+        ASCII extensions:
+            Web standards: html, xml, css, svg, json
+            Source code: c, cpp, h, cs, js, py, java, rb, pl, php, sh
+            Documents: txt, tex, markdown, asciidoc, rtf, ps
+            Configuration: ini, cfg, rc, reg
+            Tabular data: csv, tsv
+        BINARY extensions:
+            Images: jpg, png, gif, bmp, tiff, psd
+            Videos: mp4, mkv, avi, mov, mpg, vob
+            Audio: mp3, aac, wav, flac, ogg, mka, wma
+            Documents: pdf, doc, xls, ppt, docx, odt
+            Archive: zip, rar, 7z, tar, iso
+            Database: mdb, accde, frm, sqlite
+            Executable: exe, dll, so, class
+    */
+    private Type getFileType(String file) {
+
+        String ext = file.substring(file.indexOf('.')+1);
+
+        if(ext.equals("html") || ext.equals("xml") || ext.equals("css") || ext.equals("json") ||  ext.equals("csv") ||  ext.equals("tsv")) {
+            return Type.ASCII;
+        }
+        else if(ext.equals("c") || ext.equals("cpp") || ext.equals("h") || ext.equals("cs") ||  ext.equals("js") ||  ext.equals("py") || ext.equals("java") || ext.equals("rb") || ext.equals("pl") || ext.equals("php") ||  ext.equals("sh")) {
+            return Type.ASCII;
+        }
+        else if(ext.equals("txt") || ext.equals("tex") || ext.equals("markdown") || ext.equals("asciidoc") ||  ext.equals("rtf") || ext.equals("ps")) {
+            return Type.ASCII;
+        }
+        else if((ext.equals("jpg") || ext.equals("png") || ext.equals("gif") || ext.equals("bmp") ||  ext.equals("tiff") || ext.equals("psd"))) {
+            return Type.BINARY;
+        }
+        else if((ext.equals("mp4") || ext.equals("mvk") || ext.equals("avi") || ext.equals("mov") ||  ext.equals("mpg") || ext.equals("vob"))) {
+            return Type.BINARY;
+        }
+        else if((ext.equals("mp3") || ext.equals("aac") || ext.equals("wav") || ext.equals("flac") ||  ext.equals("ogg") || ext.equals("mka") || ext.equals("wma"))) {
+            return Type.BINARY;
+        }
+        else if((ext.equals("pdf") || ext.equals("doc") || ext.equals("xls") || ext.equals("ppt") ||  ext.equals("docx") || ext.equals("odt"))) {
+            return Type.BINARY;
+        }
+        else if((ext.equals("zip") || ext.equals("rar") || ext.equals("7z") || ext.equals("tar") ||  ext.equals("iso"))) {
+            return Type.BINARY;
+        }
+        else if((ext.equals("mdb") || ext.equals("accde") || ext.equals("frm") || ext.equals("sqlite"))) {
+            return Type.BINARY;
+        }
+        else if((ext.equals("exe") || ext.equals("dll") || ext.equals("so") || ext.equals("class") ||  ext.equals("jar"))) {
+            return Type.BINARY;
+        }
+        else {
+            return Type.NONE;
+        }
+
+
+    }
 }
