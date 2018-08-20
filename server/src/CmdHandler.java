@@ -470,7 +470,7 @@ public class CmdHandler {
 
                     Type file_type = getFileType(name);
 
-                    if(file_type == s_type) {
+                    if(file_type == s_type || (file_type == Type.CONTINUOUS && s_type == Type.BINARY)) {
                         wait_next_retr = true;
                         file_name = name;
                         return ("" + file.length());
