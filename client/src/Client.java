@@ -3,8 +3,8 @@ import java.io.*;
 
 public class Client {
     public static void main(String[] args) throws Exception {
-        String Lmessage = "";
-        String Umessage = "";
+        String user_msg = "";
+        String server_msg = "";
 
         String IP = "localhost";
         int port = 8085;
@@ -28,10 +28,10 @@ public class Client {
             BufferedReader inServer = new BufferedReader(new InputStreamReader(s.getInputStream()));
 
             System.out.println("Enter command: ");  // Get user input
-            Lmessage = inUser.readLine();
-            out.writeBytes(Lmessage + '\n');
+            user_msg = inUser.readLine();
+            out.writeBytes(user_msg + '\n');
 
-            if(wait_file && Lmessage.equals("SEND") && c_type != Type.ASCII) {
+            if(wait_file && user_msg.equals("SEND") && c_type != Type.ASCII) {
                 // READ IT AS BINARY OR/AND CONTINUOUS
                 DataInputStream dis = new DataInputStream(s.getInputStream());
                 FileOutputStream fos = new FileOutputStream(file_name);
@@ -51,17 +51,17 @@ public class Client {
                 wait_file = false;
             }
             else {
-                Umessage = inServer.readLine();
-                System.out.println("From server: " + Umessage);
-                file_data = Umessage;
+                server_msg = inServer.readLine();
+                System.out.println("From server: " + server_msg);
+                file_data = server_msg;
 
-                while (Umessage.charAt(Umessage.length() - 1) != '\0') {
-                    Umessage = inServer.readLine();
-                    file_data += Umessage + System.lineSeparator();
-                    System.out.println(Umessage);
+                while (server_msg.charAt(server_msg.length() - 1) != '\0') {
+                    server_msg = inServer.readLine();
+                    file_data += server_msg + System.lineSeparator();
+                    System.out.println(server_msg);
                 }
 
-                if (wait_file && Lmessage.equals("SEND") && c_type == Type.ASCII) {
+                if (wait_file && user_msg.equals("SEND") && c_type == Type.ASCII) {
                     // WRITE TO A ASCII FILE
                     BufferedWriter writer = new BufferedWriter(new FileWriter(file_name));
                     writer.write(file_data);
@@ -72,21 +72,20 @@ public class Client {
                 s.close();
             }
 
-            if(Lmessage.contains("TYPE")) {
-                if(Umessage.contains("+Using")) {
-                    String type = Lmessage.substring(5);
+            if(user_msg.contains("TYPE")) {
+                if(server_msg.contains("+Using")) {
+                    String type = user_msg.substring(5);
                     c_type = changeType(type, c_type);
                 }
             }
-
-            else if(Lmessage.contains("STOR") && Umessage.contains("+")) {
+            else if(user_msg.contains("STOR") && server_msg.contains("+")) {
                 send_file = true;
-                send_file_name = Lmessage.substring(9);
+                send_file_name = user_msg.substring(9);
                 File file = new File(send_file_name);
                 file_size = (int)file.length();
                 System.out.println("File name: " + send_file_name + " | Size: " + file_size);
             }
-            else if(send_file && Lmessage.contains("SIZE") && Umessage.contains("+ok")) {
+            else if(send_file && user_msg.contains("SIZE") && server_msg.contains("+ok")) {
                 if(c_type == Type.ASCII) {
                     StringBuffer contents = new StringBuffer();
                     BufferedReader input = null;
@@ -119,10 +118,10 @@ public class Client {
                 s.close();
             }
             // If command is RETR and response is not + or - (meaning we can send file)
-            else if(!wait_file && Lmessage.contains("RETR") && !Umessage.contains("+") && !Umessage.contains("-")) {
+            else if(!wait_file && user_msg.contains("RETR") && !server_msg.contains("+") && !server_msg.contains("-")) {
                 wait_file = true;
-                file_name = Lmessage.substring(5);
-                String size = Umessage.replaceAll("[^0-9]","");     // Remove everything that is not a number
+                file_name = user_msg.substring(5);
+                String size = server_msg.replaceAll("[^0-9]","");     // Remove everything that is not a number
                 file_size = Integer.parseInt(size);
             }
             else {
@@ -130,7 +129,7 @@ public class Client {
                 send_file = false;
             }
 
-            if(Lmessage.equals("DONE")) {
+            if(user_msg.equals("DONE")) {
                 System.out.println("Bye...");
                 break;
             }
