@@ -25,7 +25,7 @@ public class CmdHandler {
     private boolean wait_store = false;
     private String store_file_name = "default.txt";
     private int store_size = 0;
-    private int max_store_size = 8192;
+    private int max_store_size = 81920;
 
     private CdirSatatus cdir_pass_acct = CdirSatatus.WAITNON;
 
@@ -624,6 +624,9 @@ public class CmdHandler {
                                 }
                         }
                     }
+                    else if(file_type == Type.NONE) {
+                        return "-File type not supported";
+                    }
                     else {
                         return ("-Can't send " + file_type + " file as " + s_type);
                     }
@@ -677,9 +680,9 @@ public class CmdHandler {
         wait_store = false;
     }
 
-//    public int getStoreSize() {
-//        return store_size;
-//    }
+    public int getStoreSize() {
+        return store_size;
+    }
 
     protected String getStoreFileName() {
        return store_file_name;

@@ -15,11 +15,18 @@ public class Server {
 
         while(true) {
             Socket s = ss.accept();
-            BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
+            DataInputStream in = new DataInputStream(s.getInputStream());
             DataOutputStream out = new DataOutputStream(s.getOutputStream());
 
+            //================================================
+            // READING FROM THE CLIENT
+            //================================================
             if(cmd_handler.getStoreState()) {
+
+                String file_name = cmd_handler.getStoreFileName();
+                int file_size = cmd_handler.getStoreSize();
                 String file_data = "";
+
                 if(cmd_handler.getType() == Type.ASCII) {
                     System.out.println("Waiting for file");
                     cmd_in = in.readLine();
@@ -31,28 +38,28 @@ public class Server {
                         file_data += cmd_in + System.lineSeparator();
                         System.out.println(cmd_in);
                     }
-                    // WRITE TO A ASCII FILE
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(cmd_handler.getStoreFileName()));
+                    // WRITE TO AN ASCII FILE
+                    BufferedWriter writer = new BufferedWriter(new FileWriter(file_name));
                     writer.write(file_data);
                     writer.close();
                 }
                 else {
-                    // READ IT AS BINARY OR/AND CONTINUOUS
+//                  READ IT AS BINARY OR/AND CONTINUOUS
 //                    DataInputStream dis = new DataInputStream(s.getInputStream());
-//                    FileOutputStream fos = new FileOutputStream(file_name);
-//                    byte[] buffer = new byte[file_size];
-//
-//                    int totalRead = 0;
-//                    int remaining = file_size;
-//                    int read = 0;
-//                    while((read = dis.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
-//                        totalRead += read;
-//                        remaining -= read;
-//                        System.out.println("read " + totalRead + " bytes.");
-//                        fos.write(buffer, 0, read);
-//                    }
-//                    fos.close();
-//                    dis.close();
+                    FileOutputStream fos = new FileOutputStream(file_name);
+                    byte[] buffer = new byte[file_size];
+
+                    int totalRead = 0;
+                    int remaining = file_size;
+                    int read = 0;
+                    while((read = in.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
+                        totalRead += read;
+                        remaining -= read;
+                        System.out.println("read " + totalRead + " bytes.");
+                        fos.write(buffer, 0, read);
+                    }
+                    fos.close();
+//                    out.close();
                 }
 
                 cmd_handler.resetStoreState();
@@ -62,6 +69,8 @@ public class Server {
                 cmd_in = in.readLine();
                 System.out.println(("Received: " + cmd_in));
             }
+
+            //*********************************************************
 
 
 
