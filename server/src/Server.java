@@ -105,17 +105,9 @@ public class Server {
                         System.arraycopy(buffer_1, 0, buffer, 0, buffer_1.length);
                         System.arraycopy(buffer_2, 0, buffer, buffer_1.length, buffer_2.length);
 
-
-//                        while((read = fis.read(buffer, file_size, tmp_size)) > 0) {
-//                            totalRead += read;
-//                            System.out.println("read " + totalRead + " bytes.");
-//                        }
-//                        fis.close();
-
                         fos = new FileOutputStream(file_name);
                         fos.write(buffer, 0, buffer.length);
                         fos.close();
-
                     }
                     else {
 
