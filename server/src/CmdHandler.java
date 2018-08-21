@@ -26,6 +26,7 @@ public class CmdHandler {
     private String store_file_name = "default.txt";
     private int store_size = 0;
     private int max_store_size = 81920;
+    private String store_type = "NONE";
 
     private CdirSatatus cdir_pass_acct = CdirSatatus.WAITNON;
 
@@ -538,7 +539,6 @@ public class CmdHandler {
                         out.write(buffer);
                     }
 
-
                 } catch (FileNotFoundException ex) {
                     System.out.println("Unable to open file '" + file_name + "'");
                     response = "-Unable to open file " + file_name;
@@ -595,9 +595,10 @@ public class CmdHandler {
                     if(file_type == s_type || (file_type == Type.BINARY && s_type == Type.CONTINUOUS)) {
 
                         File file = new File(s_dir + File.separator + file_name);
-                        store_size = (int) file.length();
+//                        store_size = (int) file.length();
                         store_file = true;
                         store_file_name = file_name;
+                        store_type = sub_cmd;
                         switch (sub_cmd) {
                             case "NEW":
                                 if (file.exists()) {
@@ -646,7 +647,7 @@ public class CmdHandler {
             String tmp = size.replaceAll("[^0-9]","");     // Remove everything that is not a
 
             try {
-                int store_size = Integer.parseInt(tmp);
+                store_size = Integer.parseInt(tmp);
             }
             catch (Exception e) {
                 return ("-Bad request: " + e);
@@ -678,6 +679,11 @@ public class CmdHandler {
     protected void resetStoreState() {
         store_file = false;
         wait_store = false;
+        store_type = "NONE";
+    }
+
+    public String getStoreType() {
+        return store_type;
     }
 
     public int getStoreSize() {
@@ -686,6 +692,29 @@ public class CmdHandler {
 
     protected String getStoreFileName() {
        return store_file_name;
+    }
+
+    public boolean checkFileExists(String file_name) {
+        File file = new File(s_dir + File.separator + file_name);
+        if(file.exists()) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    public String getNewFileName(String file_name) {
+        String name = file_name.substring(0,file_name.indexOf("."));
+        String ext = file_name.substring(file_name.indexOf(".")+1);
+        String tmp_name = file_name;
+        int gen = 1;
+        System.out.println("Name: " + name);
+        while(checkFileExists(tmp_name)) {
+            tmp_name = name + " (" + gen + ")" + "." + ext;
+            gen++;
+        }
+        return tmp_name;
     }
 
     /* Look at the file extenstion and return the type of the file based on that

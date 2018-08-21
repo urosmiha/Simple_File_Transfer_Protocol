@@ -1,5 +1,8 @@
 import java.net.*;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 public class Server {
     public static void main(String[] args) throws Exception {
@@ -39,9 +42,20 @@ public class Server {
                         System.out.println(cmd_in);
                     }
                     // WRITE TO AN ASCII FILE
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(file_name));
-                    writer.write(file_data);
-                    writer.close();
+                    if(cmd_handler.getStoreType().equals("APP") && cmd_handler.checkFileExists(file_name)) {
+                        Files.write(Paths.get(file_name), file_data.getBytes(), StandardOpenOption.APPEND);
+                    }
+                    else {
+                        if(cmd_handler.getStoreType().equals("NEW")) {
+                            if(cmd_handler.checkFileExists(file_name)) {
+                                file_name = cmd_handler.getNewFileName(file_name);
+                            }
+                        }
+
+                        BufferedWriter writer = new BufferedWriter(new FileWriter(file_name));
+                        writer.write(file_data);
+                        writer.close();
+                    }
                 }
                 else {
 //                  READ IT AS BINARY OR/AND CONTINUOUS

@@ -35,30 +35,44 @@ public class Client {
             //================================================
             if(store_file) {
                 store_file = false;
-                try {
-                    response = readFile(send_file_name);
-                    if (response.contains("\n")) {
-                        int count = countChar(response, '\n');
-                        System.out.println(count);
-                        String tmp_msg = response;
-                        String tmp_response = response;
-                        System.out.print(response);
-                        for (int i = 0; i < count; i++) {
-                            tmp_msg = tmp_response.substring(0, tmp_response.indexOf("\n"));
-                            tmp_response = tmp_response.substring(tmp_response.indexOf("\n") + 1);
-                            System.out.println(tmp_msg);
-                            out.writeBytes(tmp_msg);
+                if(c_type == Type.ASCII) {
+                    try {
+                        response = readFile(send_file_name);
+                        if (response.contains("\n")) {
+                            int count = countChar(response, '\n');
+                            System.out.println(count);
+                            String tmp_msg = response;
+                            String tmp_response = response;
+                            System.out.print(response);
+                            for (int i = 0; i < count; i++) {
+                                tmp_msg = tmp_response.substring(0, tmp_response.indexOf("\n"));
+                                tmp_response = tmp_response.substring(tmp_response.indexOf("\n") + 1);
+                                System.out.println(tmp_msg);
+                                out.writeBytes(tmp_msg);
+                            }
+                            out.writeBytes(tmp_response + '\0' + '\n');
+                        } else {
+                            response = response + '\0' + '\n';
+                            out.writeBytes(response);
                         }
-                        out.writeBytes(tmp_response + '\0' + '\n');
-                    } else {
-                        response = response + '\0' + '\n';
-                        out.writeBytes(response);
+                    } catch (Exception e) {
+                        System.out.println("Error: " + e);
                     }
                 }
-                catch (Exception e) {
-                    System.out.println("Error: " + e);
-                }
+                else {
+                    try {
+                        FileInputStream fis = new FileInputStream(send_file_name);
+                        byte[] buffer = new byte[file_size];
 
+                        while (fis.read(buffer) > 0) {
+                            out.write(buffer);
+                        }
+                    } catch (FileNotFoundException ex) {
+                        System.out.println("Unable to open file " + send_file_name + " : " + ex);
+                    } catch (IOException ex) {
+                        System.out.println("Error reading file " + send_file_name + " : " + ex);
+                    }
+                }
             }
             else {
                 System.out.println("Enter command: ");  // Get user input
@@ -132,24 +146,7 @@ public class Client {
                 System.out.println("File name: " + send_file_name + " | Size: " + file_size);
             }
             else if(send_file && user_msg.contains("SIZE") && server_msg.contains("+ok")) {
-                if(c_type == Type.ASCII) {
-                    store_file = true;
-                }
-                else {
-                    try {
-                        FileInputStream fis = new FileInputStream(send_file_name);
-                        byte[] buffer = new byte[(int)file_size];
-
-                        while (fis.read(buffer) > 0) {
-                            out.write(buffer);
-                        }
-                    } catch (FileNotFoundException ex) {
-                        System.out.println("Unable to open file " + send_file_name + " : " + ex);
-                    } catch (IOException ex) {
-                        System.out.println("Error reading file " + send_file_name + " : " + ex);
-                    }
-                }
-                s.close();
+                store_file = true;
             }
             // If command is RETR and response is not + or - (meaning we can send file)
             else if(!wait_file && user_msg.contains("RETR") && !server_msg.contains("+") && !server_msg.contains("-")) {
