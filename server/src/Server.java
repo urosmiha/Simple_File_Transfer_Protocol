@@ -60,19 +60,83 @@ public class Server {
                 else {
 //                  READ IT AS BINARY OR/AND CONTINUOUS
 //                    DataInputStream dis = new DataInputStream(s.getInputStream());
-                    FileOutputStream fos = new FileOutputStream(file_name);
-                    byte[] buffer = new byte[file_size];
 
+                    if(cmd_handler.getStoreType().equals("NEW")) {
+                        if(cmd_handler.checkFileExists(file_name)) {
+                            file_name = cmd_handler.getNewFileName(file_name);
+                        }
+                    }
+
+                    System.out.println("NEW NAME: " + file_name);
+
+                    FileOutputStream fos; // = new FileOutputStream(file_name);
+
+                    byte[] buffer;
                     int totalRead = 0;
                     int remaining = file_size;
                     int read = 0;
-                    while((read = in.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
-                        totalRead += read;
-                        remaining -= read;
-                        System.out.println("read " + totalRead + " bytes.");
-                        fos.write(buffer, 0, read);
+
+                    if(cmd_handler.getStoreType().equals("APP") && cmd_handler.checkFileExists(file_name)) {
+
+                        int tmp_size = cmd_handler.getFileSize(file_name);
+                        byte[] buffer_1 = new byte[tmp_size];            // Allocate more buffer space since we need to read both files
+
+                        FileInputStream fis = new FileInputStream(file_name);
+                        remaining = tmp_size;
+                        while ((read = fis.read(buffer_1,0, Math.min(buffer_1.length, remaining))) > 0) {
+                            totalRead += read;
+                            remaining -= read;
+                            System.out.println("read " + totalRead + " bytes.");
+                        }
+                        fis.close();
+
+                        byte[] buffer_2 = new byte[file_size];
+                        totalRead = 0;
+                        read = 0;
+                        remaining = file_size;
+
+                        while((read = in.read(buffer_2, 0, Math.min(buffer_2.length, remaining))) > 0) {
+                            totalRead += read;
+                            remaining -= read;
+                            System.out.println("read " + totalRead + " bytes.");
+                        }
+
+                        buffer = new byte[buffer_1.length + buffer_2.length];
+                        System.arraycopy(buffer_1, 0, buffer, 0, buffer_1.length);
+                        System.arraycopy(buffer_2, 0, buffer, buffer_1.length, buffer_2.length);
+
+
+//                        while((read = fis.read(buffer, file_size, tmp_size)) > 0) {
+//                            totalRead += read;
+//                            System.out.println("read " + totalRead + " bytes.");
+//                        }
+//                        fis.close();
+
+                        fos = new FileOutputStream(file_name);
+                        fos.write(buffer, 0, buffer.length);
+                        fos.close();
+
                     }
-                    fos.close();
+                    else {
+
+                        fos = new FileOutputStream(file_name);
+
+                        System.out.println("FILE SIZE: " + file_size);
+                        buffer = new byte[file_size];
+
+                        while((read = in.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
+                            totalRead += read;
+                            remaining -= read;
+                            System.out.println("read " + totalRead + " bytes.");
+                        }
+
+                        System.out.println("DONE READING THE FILE");
+
+                        fos.write(buffer, 0, buffer.length);
+                        fos.close();
+
+                        System.out.println("DONE WRITING THE NEW FILE");
+                    }
 //                    out.close();
                 }
 

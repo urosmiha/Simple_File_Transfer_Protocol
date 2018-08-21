@@ -668,9 +668,9 @@ public class CmdHandler {
         }
     }
 
-    protected void storeFile(String arg) {
-
-    }
+//    protected void storeFile(String arg) {
+//
+//    }
 
     protected boolean getStoreState() {
         return wait_store;
@@ -715,6 +715,11 @@ public class CmdHandler {
             gen++;
         }
         return tmp_name;
+    }
+
+    public int getFileSize(String file_name) {
+        File file = new File(s_dir + File.separator + file_name);
+        return ((int)file.length());
     }
 
     /* Look at the file extenstion and return the type of the file based on that
