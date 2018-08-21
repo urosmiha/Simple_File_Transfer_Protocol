@@ -1,6 +1,14 @@
 # Simple_File_Transfer_Protocol
 RFC 913 - Simple File Transfer Protocol
 
+# TO DO:
+- MXT message
+- Fix directory path for RETR and STOR commands
+- Make Server and Clinet able to read \n characters
+- Comment code
+- Tets
+- Write readme with test process
+
 # User Credentials
 - Please ensure that on the server side there is a directory called '_admin_'.
 - Inside that directory there shuld be a text file _users.txt_ which contains all the usernames, accounts and passwords.
