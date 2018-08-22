@@ -199,6 +199,10 @@ You can change the user at any moment until the user is logged in.
 
 # NOTE
 - For the following tests the user must be looged in.
+- If you try to use any of these command without being logged in you will get a bad response.
+- Exmple:
+  - Enter Command: __TYPE A__
+  - From Server: __-Access denied, please login__
 - I recommed just logging in as root:
   - Enter Command: __USER root__
   - From Server: __!root logged in__
@@ -285,15 +289,177 @@ You can change the user at any moment until the user is logged in.
 ### Invalid path specified
 - _You can specify any invalid path. In this example I used: "C:\Users\Uros\Documents\#Projects\Simple_File_Transfer_Protocol\server\noDirectory"_
 - _You can either R or V the outcome would be identical_
-Enter command: __LIST R C:\Users\Uros\Documents\#Projects\Simple_File_Transfer_Protocol\server\noDirectory__
-From server: __-Directory does not exist__
+- Enter command: __LIST R C:\Users\Uros\Documents\#Projects\Simple_File_Transfer_Protocol\server\noDirectory__
+- From server: __-Directory does not exist__
 
+# CDIR
+- Change the current working directory to a specified directory
+- Requires the password and account.
+- In case the logged in user does not need those then it just changes the working directory.
 
+## NOTE
+- Before you start these tests eaither reset the connection or use SKIP command to logout user.
+- This command is different for each user so we need to test for multiple accounts
+
+- _You can use any directory you want. For these examples I used: "C:\Users\Uros\Documents\#Projects\Simple_File_Transfer_Protocol\server\myDir"_
+- _Please make sure you specify the full path_
+
+### No password or account required
+- Enter Command: __USER root__  _(log-in as root)_
+- From Server: __!root logged in__
+- Enter command: __CDIR C:\Users\Uros\Documents\#Projects\Simple_File_Transfer_Protocol\server\myDir__
+- From server: __!Changed working dir to C:\Users\Uros\Documents\#Projects\Simple_File_Transfer_Protocol\server\myDir__
+- Command: __DONE__ _(or SKIP)_
+- From Server: __+Thank you for choosing SFTP 1984__
+
+### No password required
+- Enter Command: __USER admin__
+- From Server: __+User-id valid, send password__
+- Enter Command: __PASS a123__
+- From Server: __! Logged in__
+- Enter command: __CDIR C:\Users\Uros\Documents\#Projects\Simple_File_Transfer_Protocol\server\myDir__
+- From Server: __+directory ok, send account/password__
+- Enter Command: __PASS a123__
+- From server: __!Changed working dir to C:\Users\Uros\Documents\#Projects\Simple_File_Transfer_Protocol\server\myDir__
+- Command: __DONE__
+- From Server: __+Thank you for choosing SFTP 1984__
+
+# KILL
+- Deletes the specifile file
+- File must be in the current working directory
+- I recommed just logging in as root first:
+  - Enter Command: __USER root__
+  - From Server: __!root logged in__
+  
+### Delete file
+- _Before you use KILL command got to the Server folder and make sure that __test_4.txt__ is there_
+- _Alternatively you can use LIST R command and see that __test_4.txt__ is listed_
+- Enter Command: __KILL test_4.txt__
+- From Server: __+test_4.txt deleted__
+- _you can go and checkout the server side (i.e. folder where Server.jar is placed) and see that __test_4.txt__ is not there anymore_
+- _you can also use LIST R and see that __test_4.txt__ is not listed anymore_
+- _Or you can try and delete it again and server will inform you that it is not there anymore:_
+- Enter Command: __KILL test_4.txt__
+- From Server: __-Not deleted because: the file you specified does not exists __
 
 # NAME
-Renames the specified file. First checks if the file exists and then allows user to rename it.
+- Renames the specified file. First checks if the file exists and then allows user to rename it.
+- If you are not already logged in then login as root:
+  - Enter Command: __USER root__
+  - From Server: __!root logged in__
+  
 ### File Exists
+- _Make sure that Server side has the file name __test_3.txt___
+- Enter Command: __NAME test_3.txt__
+- From Server: __+File exists__
+- Enter Command: __TOBE test_4.txt__ _(Rename the file to test_4.txt)
+- From Server: __+test_3.txt renamed to test_4.txt__
+- _You can go to Server folder and see that there is a file named __test_4.txt__
+- _Or you can use LISR R and you will be able to see __test_4.txt__ being listed_
+- _Also you can try and rename that file again and server will tell that it does not exist anymore_
+- Enter Command: __NAME test_3.txt__
+- From Server: __-Can't find test_3.txt__
 
-### File Does Not Exist
+# RETR
+- Server send the file to the Client.
+- Client will store that file in its local directory.
+- Sends the file based on the type:
+  - Ascii files
+  - Binary files 
+- Continuous and Binary mode are very much the same.
+- If you are not already logged in then login as root:
+  - Enter Command: __USER root__
+  - From Server: __!root logged in__
+  
+### Send Ascii
+- _Make sure you are using Ascii type:_
+- Enter Command: __TYPE A__ 
+- From Server: __+Using ASCII mode__
+- Enter Command: __RETR bob.jpg__ _(You can try and specify the binary file, but server will not send it to you)_
+- From Server: __-Can't send BINARY file as ASCII__
+- Enter Command: __RETR test_2.txt__ _(Now You can specify ascii file)_
+- From Server: __96__
+- Enter Command: __SEND__
+- From Server: Some text to be sent _(Server will printout the text you sent)_
+  - This is more text
+  - And this here is also some text
+  - Here is some text
+  - Bye
+-  _You can now see the __test_2.txt__ on your clint side (i.e. folder where your Client.jar is)_
+- _The file content should be the same on both sides (i.e. server and client side)_
 
-### 
+### Send Binar
+- _Make sure you are using Binary type:_
+- Enter Command: __TYPE B__ 
+- From Server: __+Using BINARY mode__
+- Enter Command: __RETR test_2.txt__ _(You can try and specify the ascii file, but server will not send it to you)_
+- From Server: __-Can't send ASCII file as BINARY__
+- Enter Command: __RETR hello.jpg__ _(Now You can try and specify non existent file)_
+- From Server: __-File doesn't exists__
+- Enter Command: __RETR bob.jpg__
+- From Server: __7967__
+- Enter Command: __SEND__
+- From Server: __read 7967 bytes.__
+-  _You can now see the __bob.jpg__ on your clint side (i.e. folder where your Client.jar is)_
+- _The file content should be the same on both sides (i.e. server and client side)_
+
+### Send Continuous
+- _Very identical to Continuous
+- _Make sure you are using Continuous type:_
+- Enter Command: __TYPE C__ 
+- From Server: __+Using CONTINUOUS mode__
+- Enter Command: __RETR test_2.txt__ _(You can try and specify the ascii file, but server will not send it to you)_
+- From Server: __-Can't send ASCII file as CONTINUOUS
+- Enter Command: __RETR one.jpg__
+- From Server: __60438__
+- Enter Command: __SEND__
+- From Server: __read 60438 bytes.__
+-  _You can now see the __one.jpg__ on your clint side (i.e. folder where your Client.jar is)_
+- _The file content should be the same on both sides (i.e. server and client side)_
+
+### STOP
+- _Work for anymode_
+- _For this example I am using Ascii, but you can use any mode_
+- Enter Command: __TYPE A__ 
+- From Server: __+Using ASCII mode__
+- Enter Command: __RETR test_1.txt__
+- From Server: __88__
+- Enter Command: __STOP__
+- From Server: __+ok, RETR aborted__
+- _The RETR is now aborted_
+- _You can try and use SEND but server will ask you to specify file first_
+- Enter Command: __SEND__
+- From Server: __-Please specify the file first__
+- _Now you have to specify the file again using RETR_
+
+# STOR
+- Send the specified file from the Client to the Server.
+- Has 3 modes:
+  - NEW - creates a new generation of the file if specified file exists or creates a new one if file does not exist.
+  - OLD - overwrites the file or creates a new one if pecified file does not exist.
+  - APP - Adds to the existing file or creates a new one
+- Can be used for all 3 modes:
+  - Ascii
+  - Binary
+  - Continuous
+- For this example please ensure that client side has files:
+  - franky.jpg
+  - hello.txt
+- If you are not already logged in then login as root:
+  - Enter Command: __USER root__
+  - From Server: __!root logged in__
+
+## Ascii NEW
+- _Work for anymode_
+- _For this example I am using Ascii, but you can use any mode_
+- Enter Command: __TYPE A__ 
+- From Server: __+Using ASCII mode__
+- Enter Command: __RETR test_1.txt__
+- From Server: __88__
+- Enter Command: __STOP__
+- From Server: __+ok, RETR aborted__
+- _The RETR is now aborted_
+- _You can try and use SEND but server will ask you to specify file first_
+- Enter Command: __SEND__
+- From Server: __-Please specify the file first__
+- _Now you have to specify the file again using RETR_
