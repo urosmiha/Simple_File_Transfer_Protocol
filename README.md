@@ -8,14 +8,58 @@ RFC 913 - Simple File Transfer Protocol
 - Comment code
 - Tets
 - Write readme with test process
+# Before you start
+- Once you extract the files
+- Please ensure that you have the following directories and files:
+- README.pdf
+- Server:
+  - server.jar
+  - src:
+    - Server.java
+    - CmdHandler.java
+    - HelperFunctions.java
+    - Type.java
+    - StatusEnum.java
+    - CdirStatus.java
+  - admin:
+    - users.txt
+  - cs705:
+    - Lecture 4.ppt
+    - lecture1.ppt
+    - lecture1-2.ppt
+  - myDir:
+    - myFile1 - Copy.txt
+    - myFile1.txt
+  - bob.jpg
+  - franky.zip
+  - Lecture 4.ppt
+  - one.jpg
+  - test_1.txt
+  - test_2.txt
+  - test_3.txt
+  - test_4.txt
+- Client:
+  - client.jar
+  - src:
+    - Client.java
+    - HelperFunctions.java
+    - Type.java
+  - franky.jpg
+  - hello.txt
+  - Lecture 4.ppt
+  - old.txt
+
+- __Note: This bried often talks about "Server Side" and "Client Side" what this referes to is the _Server_ and _Client_ folders that you can see once you extract the submitted zip file__
+- So when the instructions tell you to go to the "Server Sise" This just means go to the foder where the __client.jar__ is.
+- Same goes for the client.
 
 # Starting the code
 - Open two command windows
-- In one of them anvigate to _server.jar_
-- Run the server by typing: ....
+- In one of them nvigate to directory where the extracted _server.jar_ is
+- Run the server by typing: java -jar server.jar _(I tasted mine in Windows )_
 - You should get back: _Server started_
-- On the other command window navigate to _Client.jar_
-- Run the client by typing: ....
+- On the other command window navigate to directory where the extracted _client.jar_ is
+- Run the client by typing: java -jar client.jar
 - You should see: 
   - __+MIT-XX SFTP Service__
   - __Enter command:__
@@ -25,8 +69,21 @@ RFC 913 - Simple File Transfer Protocol
   - __Error: java.net.ConnectException: Connection refused: connect__
 - and the connection will close. So __make sure your server is running before you start the client__
 
-# Testing
+# Commands Supported
+- USER
+- PASS
+- ACCT
+- TYPE
+- LIST
+- CDIR
+- KILL
+- NAME
+- DONE
+- RETR
+- STOR
+- _And all the subcommands of each_
 
+# Testing
 - Most of the testing is done through the client. So assume that all of the commands listed in the tests are entered on the cliend command window
 - Client will require you to enter the command you wish to send to the server.
 - The response will be printed back on the screen
@@ -312,7 +369,7 @@ You can change the user at any moment until the user is logged in.
 - Command: __DONE__ _(or SKIP)_
 - From Server: __+Thank you for choosing SFTP 1984__
 
-### No password required
+### No account required
 - Enter Command: __USER admin__
 - From Server: __+User-id valid, send password__
 - Enter Command: __PASS a123__
@@ -320,6 +377,35 @@ You can change the user at any moment until the user is logged in.
 - Enter command: __CDIR C:\Users\Uros\Documents\#Projects\Simple_File_Transfer_Protocol\server\myDir__
 - From Server: __+directory ok, send account/password__
 - Enter Command: __PASS a123__
+- From server: __!Changed working dir to C:\Users\Uros\Documents\#Projects\Simple_File_Transfer_Protocol\server\myDir__
+- Command: __DONE__
+- From Server: __+Thank you for choosing SFTP 1984__
+
+### No passoword required
+- Enter Command: __USER user123__
+- From Server: __+User-id valid, send account__
+- Enter Command: __ACCT 123-456__
+- From Server: __! Account valid, logged-in__
+- Enter command: __CDIR C:\Users\Uros\Documents\#Projects\Simple_File_Transfer_Protocol\server\myDir__
+- From Server: __+directory ok, send account/password__
+- Enter Command: __ACCT 123-456__
+- From server: __!Changed working dir to C:\Users\Uros\Documents\#Projects\Simple_File_Transfer_Protocol\server\myDir__
+- Command: __DONE__
+- From Server: __+Thank you for choosing SFTP 1984__
+
+### Everything required
+- _You can send password and account in any order you wish. This example sends passoword first and then account_
+- Enter Command: __USER umih874__
+- From Server: __+User-id valid, send account and password__
+- Enter Command: __PASS hello__
+- From Server: __+Send Account__
+- Enter Command: __ACCT 888-888__
+- From Server: __! Account valid, logged-in__
+- Enter command: __CDIR C:\Users\Uros\Documents\#Projects\Simple_File_Transfer_Protocol\server\myDir__
+- From Server: __+directory ok, send account/password__
+- Enter Command: __PASS hello__
+- From Server: __+password ok, send account__
+- Enter Command: __ACCT 888-888__
 - From server: __!Changed working dir to C:\Users\Uros\Documents\#Projects\Simple_File_Transfer_Protocol\server\myDir__
 - Command: __DONE__
 - From Server: __+Thank you for choosing SFTP 1984__
@@ -449,7 +535,8 @@ You can change the user at any moment until the user is logged in.
   - Enter Command: __USER root__
   - From Server: __!root logged in__
 
-## Ascii NEW
+## Ascii
+- _We can test NEW subcommand_
 - Enter Command: __TYPE A__ 
 - From Server: __+Using ASCII mode__
 - Enter Command: __STOR hello.txt__
