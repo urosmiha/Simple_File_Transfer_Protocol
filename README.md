@@ -9,6 +9,20 @@ RFC 913 - Simple File Transfer Protocol
 - Tets
 - Write readme with test process
 
+# Genreal Commands
+- On the client side the user is required to enter the commands.
+- The command must be 4 characters long, otherwise the server will return an error.
+
+### Wrong Command
+- Command: _COMMAND_ (Or anything that is not a standard commnad)
+- Server: _-Invalid Command_
+- Command: _USR_ (Or anything that is shorter than4 characters)
+- Server: _-Invalid Command_
+- Command: _USER_ (Note that there is no space after you type USER)
+- Server: _-Invalid Cmmand_
+- Command: _DONE_
+- Server: _Bye_
+
 # User Credentials
 - Please ensure that on the server side there is a directory called '_admin_'.
 - Inside that directory there shuld be a text file _users.txt_ which contains all the usernames, accounts and passwords.
@@ -112,9 +126,25 @@ RFC 913 - Simple File Transfer Protocol
 - Command: _DONE_
 - Server: _Bye_
 
+### Change user
+You can change the user at any moment until user is logged in.For example:
+- Command: _USER umih874_ (Specify 1st user)
+- Server:
+- Command: _PASS hello_ (Provide password for that user)
+- Server: 
+- Command: _USER admin_ (Change user to admin)
+- Server: 
+- Command: _PASS 1_ (Provide the password for admin)
+- Server:
+- Command: _USER umih874_ (Provide new username)
+- Server: 
+- Command: _DONE_
+- Server: _Bye_
+
+# NAME
+Renames the specified file. First checks if the file exists and then allows user to rename it.
+### File Exists
+
+### File Does Not Exist
+
 ### 
-### Change user 
-
-## ACCT
-
-## PASS
