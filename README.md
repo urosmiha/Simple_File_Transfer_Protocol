@@ -450,16 +450,77 @@ You can change the user at any moment until the user is logged in.
   - From Server: __!root logged in__
 
 ## Ascii NEW
-- _Work for anymode_
-- _For this example I am using Ascii, but you can use any mode_
 - Enter Command: __TYPE A__ 
 - From Server: __+Using ASCII mode__
-- Enter Command: __RETR test_1.txt__
-- From Server: __88__
-- Enter Command: __STOP__
-- From Server: __+ok, RETR aborted__
-- _The RETR is now aborted_
-- _You can try and use SEND but server will ask you to specify file first_
-- Enter Command: __SEND__
-- From Server: __-Please specify the file first__
-- _Now you have to specify the file again using RETR_
+- Enter Command: __STOR hello.txt__
+- From Server: __-Bad request__ _(If you do not specify subcommand (i.e. NEW, OLD, APP) you will get bad request message)_
+- Enter Command: __STOR NEW hello.txt__
+- From Server: __+File does not exists, will create new file__
+- __File name: hello.txt | Size: 79__
+- Enter Command: __SIZE 79__  _(Just copy the size printed in previous line)_
+- From Server: __+ok, waiting for file__
+  - aefafaefaefaefae  _(Print out the content of the file)_
+  - faeaeff
+  - rbgtftdtbdtbtd
+  - tdtnn
+  - tfdtdtdgtndtdbt
+  - dtddtnb
+- From Server: __Stored File__
+- _If you got to the server side (i.e. your folder where Server.jar is stored you can see hello.txt being there, it should have the same text as hello.txt on the client side)_
+_We can test for versions now_
+- Enter Command: __STOR NEW hello.txt__
+- From Server: __+File exists, will create new generation of file__ 
+- __File name: hello.txt | Size: 79__
+- Enter Command: __SIZE 79__
+- - From Server: __+ok, waiting for file__
+  - aefafaefaefaefae  _(Print out the content of the file)_
+  - faeaeff
+  - rbgtftdtbdtbtd
+  - tdtnn
+  - tfdtdtdgtndtdbt
+  - dtddtnb
+- From Server: __Stored File__
+- _if you go to the Server side you can see that there is a file called __hello (1).txt___
+- _It should have the same content as hello.txt_
+- _We can test Append now_
+- Enter Command: __STOR APP hello.txt__
+- From Server: __+Will append to file__ 
+- __File name: hello.txt | Size: 79__
+- Enter Command: __SIZE 79__
+- - From Server: __+ok, waiting for file__
+  - aefafaefaefaefae  _(Print out the values we are going to append to the file)_
+  - faeaeff
+  - rbgtftdtbdtbtd
+  - tdtnn
+  - tfdtdtdgtndtdbt
+  - dtddtnb
+- From Server: __Stored File__
+- _Go to the Server side and if you open the __hello.txt__ you can see that the is appended content of the hello.txt from the Client's side_
+- _We can test __OLD__ now_
+- Enter Command: __STOR OLD old.txt__
+- From Server: __+Will create new file__ _old.txt does not exist on server side so it will create a new one_
+- __File name: hello.txt | Size: 48
+- Enter Command: __SIZE 48__
+- - From Server: __+ok, waiting for file__
+  - This is old text  _(Print out the values we are sending)_
+  - We can use it to test OLD
+  - Bye
+- From Server: __Stored File__
+- _Now on the Server side we can see that there is afile named __old.txt__ which contains all teh same values as old.txt on the Client side_
+- _Open the old.txt on the client side and edit the file_
+- _You can add anything you want. I am adding 'Hello Agian' at the end of it_
+- _Now we wan to send it again and see that the old.txt file on the server side is overwriten_
+- Enter Command: __STOR OLD old.txt__
+- From Server: __+Will write over old file__ _old.txt does not exist on server side so it will create a new one_
+- __File name: hello.txt | Size: 61
+- Enter Command: __SIZE 61__
+- - From Server: __+ok, waiting for file__
+  - This is old text  _(Print out the values we are sending, observe that there is 'Hello Again' at the bottom)_
+  - We can use it to test OLD
+  - Bye
+  - Hello Again
+- From Server: __Stored File__
+- _Go to the server side and see that __old.txt__ is now different_
+
+### Test Binary and Continuous Now
+- This is very similar to Ascii test, but now we are going to use jpg files.
