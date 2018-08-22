@@ -1,13 +1,6 @@
 # Simple_File_Transfer_Protocol
 RFC 913 - Simple File Transfer Protocol
 
-# TO DO:
-- MXT message
-- Fix directory path for RETR and STOR commands
-- Make Server and Clinet able to read \n characters
-- Comment code
-- Tets
-- Write readme with test process
 # Before you start
 - Once you extract the files
 - Please ensure that you have the following directories and files:
@@ -610,4 +603,50 @@ _We can test for versions now_
 - _Go to the server side and see that __old.txt__ is now different_
 
 ### Test Binary and Continuous Now
+
 - This is very similar to Ascii test, but now we are going to use jpg files.
+- _We can test NEW subcommand_
+- Enter Command: __TYPE B__ _(Or C cause theya are the same)_
+- From Server: __+Using BINARY mode__
+- Enter Command: __STOR franky.jpg__
+- From Server: __-Bad request__ _(If you do not specify subcommand (i.e. NEW, OLD, APP) you will get bad request message)_
+- Enter Command: __STOR NEW franky.jpg__
+- From Server: __+File does not exists, will create new file__
+- __File name: franky.jpg | Size: 30716__
+- Enter Command: __SIZE 30716__
+- From server: +ok, waiting for file 
+- From server: Stored File 
+- _If you got to the server side (i.e. your folder where Server.jar is stored you can see franky.jpg being there, it should the same image as the one on the client side)_
+_We can test for versions now_
+- Enter Command: __STOR NEW franky.jpg__
+- From Server: __+File exists, will create new generation of file__ 
+- __File name: franky.jpg | Size: 30716__
+- Enter Command: __SIZE 30716__
+- From server: +ok, waiting for file 
+- From server: Stored File 
+- _if you go to the Server side you can see that there is a file called __franky (1).jpg___
+- _It should have the same content as franky.jpg_
+- _We can test Append now_
+- Enter Command: __STOR APP franky.jpg__
+- From Server: __+Will append to file__ 
+- __File name: franky.jpg | Size: 30716__
+- Enter Command: __SIZE 30716__
+- From server: +ok, waiting for file 
+- From server: Stored File 
+- _Go to the Server side and if you open the __franky.jpg__ you can see that the file is twice the size (i.e. 60KB) of the franky ,jpg file on the client side_
+- _We can test __OLD__ now_
+- Enter Command: __STOR OLD franky.jpg__
+- From Server: __+Will write over old file__ _franky.jpg will overwrite the existing franky.jpg on server side_
+- __File name: franky.jpg | Size: 30716
+- Enter Command: __SIZE 30716__
+- From Server: __+ok, waiting for file__
+- From Server: __Stored File__
+- _Go to the server side and see that __franky.jpg__ is now the same size (i.e. 30KB) as the franky.jpg on the client side
+
+- If you delete franky.jpg from the server side and go through the same process but change TYPE to C you will be able to observe the same outcome.
+
+### Close the connection
+- Enter Command: __DONE__
+- From Server: __+Thank you for choosing SFTP 1984__
+
+# FURTHER TEST....
