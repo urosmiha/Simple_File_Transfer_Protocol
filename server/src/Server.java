@@ -142,8 +142,6 @@ public class Server {
 
             //*********************************************************
 
-
-
             if(cmd_handler.getType() != Type.ASCII && cmd_in.equals("SEND")) {
                 cmd_handler.sendBinary(out);
             }

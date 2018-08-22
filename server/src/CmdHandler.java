@@ -41,9 +41,9 @@ public class CmdHandler {
 //        }
 
         s_dir = System.getProperty("user.dir");
+        helper = new HelperFunctions();
         status = StatusEnum.LOGGEDOUT;
         s_user = "";
-        helper = new HelperFunctions();
         s_account = "";
         s_password = "";
         s_type = Type.ASCII;    // Set type as ascii by default
@@ -55,7 +55,7 @@ public class CmdHandler {
 
         // Special case where command can be only 4 characters (i.e. for RETR)
         if(cmd.length() == 4) {
-            if(cmd.equals("SEND") || cmd.equals("STOP")) {
+            if(cmd.equals("SEND") || cmd.equals("STOP") || cmd.equals("DONE") || cmd.equals("SKIP")) {
                 cdm_id = cmd;
             }
             else {
@@ -89,7 +89,7 @@ public class CmdHandler {
             case "PASS":
                 return authorisePassword(arg);
             case "DONE":
-                return "+";
+                return "+Thank you for choosing SFTP 1984";
             case "TYPE":
                 return changeType(arg);
             case "LIST":
@@ -114,6 +114,8 @@ public class CmdHandler {
                 return checkStoreSize(arg);
             case "NONE":
                 return "Stored File";
+            case "SKIP":
+                return clearUser();
             default:
                 return "NONE";
         }
@@ -123,7 +125,7 @@ public class CmdHandler {
     private String authoriseUser(String user) {
 
         if(status.equals(StatusEnum.LOGGEDOUT)) {
-
+            clearUser();
             // Read a text file with all the user-ids in it
             File file = new File("admin/users.txt");
             BufferedReader br = null;
@@ -148,7 +150,11 @@ public class CmdHandler {
                         } // If user-id does NOT have an associated account but it needs a password
                         else if(helper.getUserAccount(user).equals(" ")){
                             return "+User-id valid, send password";
-                        }   // any other way go to next step in login process
+                        } // If associated user does NOT have a password but it needs an account
+                        else if(helper.getUserPassword(user).equals(" ")){
+                            return "+User-id valid, send account";
+                        }
+                        // any other way go to next step in login process
                         else {
                             return "+User-id valid, send account and password";
                         }
@@ -171,7 +177,7 @@ public class CmdHandler {
 
         // If user-id was set to some value
         if(!s_user.isEmpty()) {
-
+            // Wait on the
             if(cdir_pass_acct.equals(CdirSatatus.WAITBOTH)) {
                 if(account.equals(helper.getUserAccount(s_user))) {
                     cdir_pass_acct = CdirSatatus.WAITPASS;
@@ -223,7 +229,7 @@ public class CmdHandler {
             if(cdir_pass_acct.equals(CdirSatatus.WAITBOTH)) {
                 if(password.equals(helper.getUserPassword(s_user))) {
                     cdir_pass_acct = CdirSatatus.WAITACCT;
-                    return "+account ok, send account";
+                    return "+password ok, send account";
                 }
                 else {
                     return "-invalid password";
@@ -293,48 +299,62 @@ public class CmdHandler {
         return s_type;
     }
 
-    private String listFiles(String format) {
-        System.out.println(status);
+    private String listFiles(String arg) {
+        String format;
+        String path;
         if(status.equals(StatusEnum.LOGGEDIN)) {
             try {
-                File folder = new File(s_dir);
-                File[] listOfFiles = folder.listFiles();
-                String response = "+" + s_dir + "\r\n";
+                format = arg.charAt(0) + "";
 
-                assert listOfFiles != null;
-                for (File listOfFile : listOfFiles) {
-                    // Append files
-                    if (listOfFile.isFile()) {
-                        switch (format) {
-                            case "R":
-                                response += listOfFile.getName() + "\r\n";
-                                break;
-                            case "V":
-                                response += listOfFile.getName() + ": ";
-                                response += "Size: " + listOfFile.length() + "; ";
-                                response += "Protection: ";
-                                if (listOfFile.canExecute()) {
-                                    response += "can Execute,";
-                                }
-                                if (listOfFile.canRead()) {
-                                    response += "can Read,";
-                                }
-                                if (listOfFile.canWrite()) {
-                                    response += "can Write";
-                                }
-                                response += "; ";
-                                String time = helper.msToDays(listOfFile.lastModified());
-                                response += "Last modified " + time + " days ago; ";
-                                response += "Last Author: ;";
-                                response += "\r\n";
-                                break;
-                            default:
-                                return "-Invalid format specified, please try again";
+                if(arg.length() != 1) {
+                    path = arg.substring(2);
+                }
+                else {
+                    path = s_dir;
+                }
+
+                File folder = new File(path);
+                if(folder.isDirectory()) {
+
+                    File[] listOfFiles = folder.listFiles();
+                    String response = "+" + path + "\r\n";
+
+                    assert listOfFiles != null;
+                    for (File listOfFile : listOfFiles) {
+                        // Append files
+                        if (listOfFile.isFile()) {
+                            switch (format) {
+                                case "R":
+                                    response += listOfFile.getName() + "\r\n";
+                                    break;
+                                case "V":
+                                    response += listOfFile.getName() + ": ";
+                                    response += "Size: " + listOfFile.length() + "; ";
+                                    response += "Protection: ";
+                                    if (listOfFile.canExecute()) {
+                                        response += "can Execute,";
+                                    }
+                                    if (listOfFile.canRead()) {
+                                        response += "can Read,";
+                                    }
+                                    if (listOfFile.canWrite()) {
+                                        response += "can Write";
+                                    }
+                                    response += "; ";
+                                    String time = helper.msToDays(listOfFile.lastModified());
+                                    response += "Last modified " + time + " days ago; ";
+                                    response += "\r\n";
+                                    break;
+                                default:
+                                    return "-Invalid format specified, please try again";
+                            }
                         }
                     }
+                    return response;
                 }
-                return response;
-
+                else {
+                    return "-Directory does not exist";
+                }
             } catch (Exception e) {
                 return "-" + e;
             }
@@ -364,10 +384,10 @@ public class CmdHandler {
                                 cdir_pass_acct = CdirSatatus.WAITBOTH;
                             }
                             else if(!helper.getUserAccount(s_user).equals(" ")) {
-                                cdir_pass_acct = CdirSatatus.WAITPASS;
+                                cdir_pass_acct = CdirSatatus.WAITACCT;
                             }
                             else if(!helper.getUserPassword(s_user).equals(" ")) {
-                                cdir_pass_acct = CdirSatatus.WAITACCT;
+                                cdir_pass_acct = CdirSatatus.WAITPASS;
                             }
                             return "+directory ok, send account/password";
                         }
@@ -777,4 +797,14 @@ public class CmdHandler {
             return Type.NONE;
         }
     }
+
+    // Clear the currently logged in User
+    private String clearUser(){
+        status = StatusEnum.LOGGEDOUT;
+        s_user = "";
+        s_account = "";
+        s_password = "";
+        return "+Skip having to close connection. User cleared";
+    }
+
 }
